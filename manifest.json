@@ -1,0 +1,25 @@
+{
+  "name": "D'Leia Comprovantes",
+  "short_name": "D'Leia",
+  "description": "Envio automático de comprovantes via WhatsApp para D'Leia Moda Fitness",
+  "start_url": "./dleia_comprovante.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#e91e8c",
+  "theme_color": "#e91e8c",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
