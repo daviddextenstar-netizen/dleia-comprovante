@@ -1,6 +1,6 @@
 // Service Worker para D'Leia Comprovantes
 // Versão do app — MUDE ESTE NÚMERO sempre que atualizar o app
-const APP_VERSION = '2.2.1';
+const APP_VERSION = '2.4.0';
 const CACHE_NAME = 'dleia-comprovante-' + APP_VERSION;
 
 const ASSETS_TO_CACHE = [

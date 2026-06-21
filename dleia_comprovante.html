@@ -145,6 +145,7 @@
   </div>
   <div class="topbar-btns">
     <button class="topbar-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Alternar modo noturno">🌙</button>
+    <button class="topbar-btn" onclick="abrirHistorico()">📋 Histórico</button>
     <button class="topbar-btn" onclick="setSection('sec-painel')">⚙️ Painel</button>
     <button class="topbar-btn" onclick="setSection('sec-upload')">📸 Enviar</button>
   </div>
@@ -175,6 +176,12 @@
         <input type="text" id="evo-instance" placeholder="dleia" />
         <label>API Key</label>
         <input type="password" id="evo-apikey" placeholder="91635C7604D9-4FC1-BCF7-4D9B3E0658FB" />
+      </div>
+      <div class="card">
+        <div class="card-title">⏱️ Intervalo entre envios</div>
+        <div class="alert alert-info">O app calcula o intervalo automaticamente pela quantidade de etiquetas: até 20 → 4s · até 50 → 6s · mais de 50 → 10s. Deixe em branco ou "auto" para usar esse cálculo. Para fixar um valor próprio, digite o número de segundos.</div>
+        <label>Segundos de espera entre cada envio <span class="label-hint">deixe "auto" para calcular sozinho</span></label>
+        <input type="text" id="intervalo-envio" placeholder="auto" />
       </div>
       <button class="btn btn-green" onclick="saveConfig()">💾 Salvar configurações</button>
     </div>
@@ -241,6 +248,7 @@
       </div>
       <input type="file" id="file-input" accept="image/*" multiple onchange="onFilesSelected(this.files)">
       <div class="thumb-grid" id="thumb-grid"></div>
+      <div class="alert alert-warn" id="aviso-intervalo" style="display:none; margin-top:12px;"></div>
     </div>
     <button class="btn btn-green" id="btn-send" onclick="startProcessing()" disabled>📲 Ler e enviar comprovantes</button>
   </div>
@@ -275,6 +283,14 @@
     <button class="btn btn-gray" onclick="setSection('sec-painel')" style="margin-top:8px">⚙️ Ir para o Painel</button>
   </div>
 
+  <!-- ========== HISTÓRICO ========== -->
+  <div class="section" id="sec-historico">
+    <div class="card-title" style="margin-bottom:12px;">📋 Histórico de lotes enviados</div>
+    <div id="historico-lista"></div>
+    <button class="btn btn-gray" onclick="limparHistorico()" style="margin-top:8px">🗑️ Limpar histórico</button>
+    <button class="btn btn-gray" onclick="setSection('sec-upload')" style="margin-top:8px">📸 Voltar a enviar</button>
+  </div>
+
 </div>
 
 <script>
@@ -295,6 +311,13 @@ function saveConfig() {
   localStorage.setItem('evo_server',    document.getElementById('evo-server').value.trim().replace(/^https?:\/\//, '').replace(/\/$/, ''));
   localStorage.setItem('evo_instance',  document.getElementById('evo-instance').value.trim());
   localStorage.setItem('evo_apikey',    document.getElementById('evo-apikey').value.trim());
+  const intervaloTexto = document.getElementById('intervalo-envio').value.trim().toLowerCase();
+  if (intervaloTexto === '' || intervaloTexto === 'auto') {
+    localStorage.setItem('intervalo_envio', 'auto');
+  } else {
+    const intervaloVal = parseInt(intervaloTexto, 10);
+    localStorage.setItem('intervalo_envio', isNaN(intervaloVal) || intervaloVal < 0 ? 'auto' : String(intervaloVal));
+  }
   localStorage.setItem('msg_template',  document.getElementById('msg-template').value);
   localStorage.setItem('nome_loja',     document.getElementById('nome-loja').value.trim());
   localStorage.setItem('cor_loja',      document.getElementById('cor-hex').value.trim());
@@ -307,6 +330,7 @@ function loadConfig() {
   document.getElementById('evo-server').value    = localStorage.getItem('evo_server') || '';
   document.getElementById('evo-instance').value  = localStorage.getItem('evo_instance') || '';
   document.getElementById('evo-apikey').value    = localStorage.getItem('evo_apikey') || '';
+  document.getElementById('intervalo-envio').value = localStorage.getItem('intervalo_envio') || 'auto';
   document.getElementById('msg-template').value      = localStorage.getItem('msg_template') || MSG_PADRAO;
   document.getElementById('nome-loja').value         = localStorage.getItem('nome_loja') || "D'Leia Moda Fitness";
   document.getElementById('cor-hex').value           = localStorage.getItem('cor_loja') || '#1D9E75';
@@ -378,6 +402,12 @@ function showTab(id, btn) {
 }
 
 // ===== UPLOAD =====
+function calcularIntervaloRecomendado(qtd) {
+  if (qtd <= 20) return 4;
+  if (qtd <= 50) return 6;
+  return 10;
+}
+
 function onFilesSelected(files) {
   selectedFiles = Array.from(files);
   const grid = document.getElementById('thumb-grid');
@@ -387,6 +417,23 @@ function onFilesSelected(files) {
     grid.innerHTML += `<div class="thumb"><img src="${url}"><span class="num">${i+1}</span></div>`;
   });
   document.getElementById('btn-send').disabled = selectedFiles.length === 0;
+  atualizarAvisoIntervalo();
+}
+
+function atualizarAvisoIntervalo() {
+  const aviso = document.getElementById('aviso-intervalo');
+  if (!aviso) return;
+  const qtd = selectedFiles.length;
+  if (qtd === 0) { aviso.style.display = 'none'; return; }
+
+  const segundos = calcularIntervaloRecomendado(qtd);
+  const tempoTotalSeg = (qtd - 1) * segundos;
+  const minutos = Math.floor(tempoTotalSeg / 60);
+  const segs = tempoTotalSeg % 60;
+  const tempoTexto = minutos > 0 ? `${minutos}min ${segs}s` : `${segs}s`;
+
+  aviso.style.display = 'block';
+  aviso.innerHTML = `⏱️ <b>${qtd} etiqueta${qtd > 1 ? 's' : ''}</b> selecionada${qtd > 1 ? 's' : ''} · intervalo de <b>${segundos}s</b> entre envios · tempo estimado: <b>${tempoTexto}</b>`;
 }
 
 // ===== PROCESSAMENTO =====
@@ -435,6 +482,14 @@ async function startProcessing() {
   renderItems(items);
 
   let ok = 0, err = 0;
+  const inicioLote = Date.now();
+
+  // Usa o valor manual do Painel só se o usuário mudou de "auto"; senão calcula pelo volume
+  const intervaloManual = localStorage.getItem('intervalo_envio');
+  const segundosIntervalo = (intervaloManual && intervaloManual !== 'auto')
+    ? parseInt(intervaloManual, 10)
+    : calcularIntervaloRecomendado(selectedFiles.length);
+  const intervaloEnvios = segundosIntervalo * 1000;
 
   for (let i = 0; i < selectedFiles.length; i++) {
     updateProgress(i, selectedFiles.length);
@@ -462,11 +517,32 @@ async function startProcessing() {
       err++;
     }
     updateProgress(i+1, selectedFiles.length);
-    await sleep(500);
+
+    // Intervalo entre envios (proteção contra bloqueio do WhatsApp por volume),
+    // só aplica se ainda houver próximo item na fila
+    if (i < selectedFiles.length - 1 && intervaloEnvios > 0) {
+      await contagemRegressiva(intervaloEnvios);
+    }
   }
 
-  await sleep(600);
+  await sleep(400);
+  salvarHistorico(inicioLote, ok, err);
   showDone(ok, err);
+}
+
+function contagemRegressiva(ms) {
+  return new Promise((resolve) => {
+    const segundosTotais = Math.ceil(ms / 1000);
+    let restante = segundosTotais;
+    const textoEl = document.getElementById('prog-text');
+    const tick = () => {
+      if (textoEl) textoEl.textContent = `Aguardando ${restante}s antes do próximo envio...`;
+      if (restante <= 0) { resolve(); return; }
+      restante--;
+      setTimeout(tick, 1000);
+    };
+    tick();
+  });
 }
 
 async function lerEtiqueta(file, apiKey) {
@@ -595,6 +671,97 @@ async function compartilharFoto(i) {
   link.click();
   document.body.removeChild(link);
   alert('Seu navegador não permite compartilhar direto. A foto foi baixada — envie manualmente pelo WhatsApp.');
+}
+
+function salvarHistorico(inicioLote, ok, err) {
+  const historico = JSON.parse(localStorage.getItem('historico_lotes') || '[]');
+
+  const itens = dadosLidos.map(r => ({
+    nome: r.nome || '?',
+    telefone: r.telefone || '',
+    box: r.box || '',
+    setor: r.setor || '',
+    excursao: r.excursao || '',
+    taxa: r.taxa && r.taxa !== 'sem taxa' ? r.taxa : '',
+    sucesso: !!r.sucesso,
+    erro: r.erro || ''
+  }));
+
+  historico.unshift({
+    data: new Date(inicioLote).toISOString(),
+    total: dadosLidos.length,
+    enviados: ok,
+    erros: err,
+    itens: itens
+  });
+
+  // Mantém só os últimos 30 lotes para não inchar o localStorage
+  while (historico.length > 30) historico.pop();
+
+  localStorage.setItem('historico_lotes', JSON.stringify(historico));
+}
+
+function formatarDataHistorico(isoStr) {
+  const d = new Date(isoStr);
+  const dataStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const horaStr = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  return `${dataStr} às ${horaStr}`;
+}
+
+function abrirHistorico() {
+  const historico = JSON.parse(localStorage.getItem('historico_lotes') || '[]');
+  const container = document.getElementById('historico-lista');
+
+  if (historico.length === 0) {
+    container.innerHTML = `<div class="alert alert-info">Nenhum lote enviado ainda.</div>`;
+  } else {
+    container.innerHTML = historico.map((lote, idx) => {
+      const valorTaxas = lote.itens
+        .filter(it => it.taxa)
+        .reduce((soma, it) => soma + (parseFloat(it.taxa) || 0), 0);
+
+      return `
+      <div class="card" style="margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleLoteHistorico(${idx})">
+          <div>
+            <div style="font-size:13px; font-weight:600; color:var(--text-primary);">${formatarDataHistorico(lote.data)}</div>
+            <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">
+              ${lote.total} etiquetas · ${lote.enviados} enviadas${lote.erros > 0 ? ` · ${lote.erros} erro(s)` : ''}${valorTaxas > 0 ? ` · R$ ${valorTaxas.toFixed(2)} em taxas` : ''}
+            </div>
+          </div>
+          <span style="font-size:18px; color:var(--text-secondary);" id="lote-arrow-${idx}">▾</span>
+        </div>
+        <div id="lote-detalhe-${idx}" style="display:none; margin-top:10px; padding-top:10px; border-top:1px solid var(--row-border);">
+          ${lote.itens.map(it => `
+            <div class="item-row" style="padding:6px 0;">
+              <div class="item-info">
+                <div class="name" style="font-size:12px;">${it.nome}</div>
+                <div class="detail">${it.telefone || ''}${it.taxa ? ` · R$ ${parseFloat(it.taxa).toFixed(2)}` : ''}</div>
+              </div>
+              <span class="badge ${it.sucesso ? 'badge-ok' : 'badge-err'}" style="font-size:10px;">${it.sucesso ? 'Enviado' : 'Erro'}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  setSection('sec-historico');
+}
+
+function toggleLoteHistorico(idx) {
+  const det = document.getElementById('lote-detalhe-' + idx);
+  const arrow = document.getElementById('lote-arrow-' + idx);
+  const aberto = det.style.display !== 'none';
+  det.style.display = aberto ? 'none' : 'block';
+  arrow.textContent = aberto ? '▾' : '▴';
+}
+
+function limparHistorico() {
+  if (confirm('Apagar todo o histórico de lotes? Essa ação não pode ser desfeita.')) {
+    localStorage.removeItem('historico_lotes');
+    abrirHistorico();
+  }
 }
 
 function resetApp() {
