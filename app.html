@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D'Leia — Comprovante WhatsApp</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#e91e8c">
+<style>
+  :root {
+    --bg: #f5f5f0;
+    --card-bg: #fff;
+    --card-border: #e8e8e4;
+    --text-primary: #222;
+    --text-secondary: #888;
+    --text-tertiary: #aaa;
+    --input-bg: #fafafa;
+    --input-border: #ddd;
+    --row-border: #f0f0f0;
+    --gray-bg: #eee;
+    --gray-text: #555;
+    --summary-bg: #f8f8f5;
+    --tab-bg: #f0f0ec;
+    --tag-bg: #f0f0f0;
+    --tag-border: #ddd;
+    --tag-text: #555;
+  }
+  [data-theme="dark"] {
+    --bg: #121212;
+    --card-bg: #1e1e1e;
+    --card-border: #2c2c2c;
+    --text-primary: #f0f0f0;
+    --text-secondary: #aaa;
+    --text-tertiary: #777;
+    --input-bg: #2a2a2a;
+    --input-border: #3a3a3a;
+    --row-border: #2c2c2c;
+    --gray-bg: #2c2c2c;
+    --gray-text: #ccc;
+    --summary-bg: #252525;
+    --tab-bg: #252525;
+    --tag-bg: #2c2c2c;
+    --tag-border: #3a3a3a;
+    --tag-text: #ccc;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); min-height: 100vh; transition: background .2s; }
+  .topbar { background: var(--cor-loja, #1D9E75); color: #fff; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; }
+  .topbar h1 { font-size: 16px; font-weight: 600; }
+  .topbar span { font-size: 12px; opacity: .8; }
+  .topbar-btns { display: flex; gap: 8px; }
+  .topbar-btn { background: rgba(255,255,255,0.2); border: none; color: #fff; border-radius: 8px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+  .topbar-btn:hover { background: rgba(255,255,255,0.3); }
+  .container { max-width: 480px; margin: 0 auto; padding: 16px; }
+  .card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--card-border); padding: 16px; margin-bottom: 12px; }
+  .card-title { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+  input[type=password], input[type=text], input[type=color], textarea, select {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--input-border); border-radius: 8px;
+    font-size: 14px; margin-bottom: 8px; background: var(--input-bg); font-family: inherit; color: var(--text-primary);
+  }
+  input[type=color] { height: 42px; padding: 4px 8px; cursor: pointer; }
+  textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
+  input:focus, textarea:focus { outline: none; border-color: var(--cor-loja, #1D9E75); background: #fff; }
+  label { font-size: 13px; color: var(--gray-text); display: block; margin-bottom: 4px; font-weight: 500; }
+  .label-hint { font-size: 11px; color: var(--text-tertiary); font-weight: normal; margin-left: 4px; }
+  .btn { width: 100%; padding: 13px; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 8px; transition: opacity .15s; }
+  .btn:active { opacity: .85; }
+  .btn-green { background: var(--cor-loja, #1D9E75); color: #fff; }
+  .btn-gray { background: var(--gray-bg); color: var(--gray-text); }
+  .btn-red { background: #dc3545; color: #fff; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .upload-area { border: 2px dashed #c8e6d8; border-radius: 12px; padding: 28px 16px; text-align: center; cursor: pointer; background: #f0faf6; transition: border-color .2s; }
+  .upload-area:hover { border-color: var(--cor-loja, #1D9E75); }
+  .upload-area .icon { font-size: 40px; margin-bottom: 8px; }
+  .upload-area p { font-size: 14px; font-weight: 600; color: var(--cor-loja, #1D9E75); }
+  .upload-area span { font-size: 12px; color: #888; }
+  #file-input { display: none; }
+  .thumb-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-top: 12px; }
+  .thumb { aspect-ratio:1; border-radius:8px; background:#eee; overflow:hidden; position:relative; }
+  .thumb img { width:100%; height:100%; object-fit:cover; }
+  .thumb .num { position:absolute; top:3px; left:3px; background:var(--cor-loja,#1D9E75); color:#fff; font-size:10px; font-weight:700; border-radius:4px; padding:1px 5px; }
+  .thumb .remover {
+    position:absolute; top:3px; right:3px; width:20px; height:20px; border-radius:50%;
+    background:rgba(0,0,0,0.65); color:#fff; border:none; font-size:13px; font-weight:700;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1; padding:0;
+  }
+  .thumb .remover:hover { background:#dc3545; }
+  .progress-bar { height:6px; background:#e0e0e0; border-radius:3px; overflow:hidden; margin: 8px 0 4px; }
+  .progress-fill { height:100%; background:var(--cor-loja,#1D9E75); border-radius:3px; transition:width .4s ease; }
+  .progress-label { display:flex; justify-content:space-between; font-size:12px; color:#888; }
+  .item-row { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--row-border); }
+  .item-row:last-child { border-bottom:none; }
+  .item-thumb { width:38px; height:38px; border-radius:8px; object-fit:cover; flex-shrink:0; background:#eee; }
+  .item-info { flex:1; min-width:0; }
+  .item-info .name { font-size:13px; font-weight:600; color: var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .item-info .detail { font-size:12px; color: var(--text-secondary); }
+  .badge { font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; flex-shrink:0; }
+  .badge-wait { background:#FFF3CD; color:#856404; }
+  .badge-proc { background:#D1ECF1; color:#0c5460; }
+  .badge-ok   { background:#D4EDDA; color:#155724; }
+  .badge-err  { background:#F8D7DA; color:#721c24; }
+  .btn-share {
+    background: #721c24; color: #fff; border: none; border-radius: 8px;
+    padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
+    flex-shrink: 0; white-space: nowrap;
+  }
+  .btn-share:hover { opacity: .85; }
+  .summary-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:12px; }
+  .summary-box { background: var(--summary-bg); border-radius:10px; padding:12px 8px; text-align:center; }
+  .summary-box .num { font-size:22px; font-weight:700; }
+  .summary-box .lbl { font-size:11px; color: var(--text-secondary); margin-top:2px; }
+  .section { display:none; }
+  .section.active { display:block; }
+  .alert { padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:10px; line-height:1.5; }
+  .alert-info { background:#D1ECF1; color:#0c5460; border:1px solid #bee5eb; }
+  .alert-warn { background:#FFF3CD; color:#856404; border:1px solid #ffc107; }
+  .success-icon { width:60px; height:60px; border-radius:50%; background:#D4EDDA; display:flex; align-items:center; justify-content:center; margin:0 auto 12px; font-size:30px; }
+  .update-banner {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 999;
+    background: #1a1a1a; color: #fff; padding: 14px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
+    transform: translateY(100%); transition: transform .3s ease;
+  }
+  .update-banner.show { transform: translateY(0); }
+  .update-banner span { font-size: 13px; flex: 1; }
+  .update-btn {
+    background: var(--cor-loja, #e91e8c); color: #fff; border: none;
+    border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 600;
+    cursor: pointer; white-space: nowrap;
+  }
+  .nav-tabs { display:flex; gap:4px; margin-bottom:16px; background: var(--tab-bg); border-radius:10px; padding:4px; }
+  .nav-tab { flex:1; padding:8px; border:none; border-radius:8px; font-size:13px; font-weight:500; cursor:pointer; background:transparent; color: var(--text-secondary); transition: all .15s; }
+  .nav-tab.active { background: var(--card-bg); color: var(--text-primary); box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+  .preview-box { background:#ECE5DD; border-radius:10px; padding:14px; margin-top:8px; }
+  .preview-bubble { background:#DCF8C6; border-radius:10px 10px 2px 10px; padding:10px 12px; font-size:13px; line-height:1.7; color:#111; max-width:90%; margin-left:auto; white-space:pre-wrap; }
+  .color-row { display:grid; grid-template-columns:1fr 80px; gap:8px; align-items:end; margin-bottom:8px; }
+  .tag-hint { display:inline-block; background: var(--tag-bg); border-radius:4px; padding:2px 6px; font-size:11px; color: var(--tag-text); margin:2px; cursor:pointer; border:1px solid var(--tag-border); }
+  .tag-hint:hover { filter: brightness(1.2); }
+  .divider { height:1px; background: var(--row-border); margin:12px 0; }
+</style>
+</head>
+<body>
+
+<div class="topbar" id="topbar">
+  <div>
+    <h1 id="nome-loja-topbar">D'Leia Moda Fitness</h1>
+    <span>Comprovante WhatsApp</span>
+  </div>
+  <div class="topbar-btns">
+    <button class="topbar-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Alternar modo noturno">🌙</button>
+    <button class="topbar-btn" onclick="abrirHistorico()">📋 Histórico</button>
+    <button class="topbar-btn" onclick="setSection('sec-painel')">⚙️ Painel</button>
+    <button class="topbar-btn" onclick="setSection('sec-upload')">📸 Enviar</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ========== PAINEL ========== -->
+  <div class="section" id="sec-painel">
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="showTab('tab-apis', this)">🔑 APIs</button>
+      <button class="nav-tab" onclick="showTab('tab-mensagem', this)">💬 Mensagem</button>
+      <button class="nav-tab" onclick="showTab('tab-loja', this)">🎨 Aparência</button>
+    </div>
+
+    <!-- ABA APIs -->
+    <div id="tab-apis">
+      <div class="card">
+        <div class="card-title">🤖 Claude (Anthropic)</div>
+        <label>Chave API <span class="label-hint">console.anthropic.com/settings/keys</span></label>
+        <input type="password" id="anthropic-key" placeholder="sk-ant-..." />
+      </div>
+      <div class="card">
+        <div class="card-title">📱 Evolution API (WhatsApp)</div>
+        <label>URL do servidor <span class="label-hint">sem https://</span></label>
+        <input type="text" id="evo-server" placeholder="evolution-api-ll04.srv1770269.hstgr.cloud" />
+        <label>Nome da instância</label>
+        <input type="text" id="evo-instance" placeholder="dleia" />
+        <label>API Key</label>
+        <input type="password" id="evo-apikey" placeholder="91635C7604D9-4FC1-BCF7-4D9B3E0658FB" />
+      </div>
+      <div class="card">
+        <div class="card-title">⏱️ Intervalo entre envios</div>
+        <div class="alert alert-info">O app calcula o intervalo automaticamente pela quantidade de etiquetas: até 20 → 4s · até 50 → 6s · mais de 50 → 10s. Deixe em branco ou "auto" para usar esse cálculo. Para fixar um valor próprio, digite o número de segundos.</div>
+        <label>Segundos de espera entre cada envio <span class="label-hint">deixe "auto" para calcular sozinho</span></label>
+        <input type="text" id="intervalo-envio" placeholder="auto" />
+      </div>
+      <button class="btn btn-green" onclick="saveConfig()">💾 Salvar configurações</button>
+    </div>
+
+    <!-- ABA MENSAGEM -->
+    <div id="tab-mensagem" style="display:none">
+      <div class="card">
+        <div class="card-title">💬 Texto da mensagem</div>
+        <div class="alert alert-info" style="margin-bottom:12px;">
+          Use as variáveis abaixo para inserir dados da etiqueta automaticamente. Clique para inserir:
+          <div style="margin-top:8px;">
+            <span class="tag-hint" onclick="inserirTag('{nome}')">👤 {nome}</span>
+            <span class="tag-hint" onclick="inserirTag('{box}')">📦 {box}</span>
+            <span class="tag-hint" onclick="inserirTag('{setor}')">📍 {setor}</span>
+            <span class="tag-hint" onclick="inserirTag('{status}')">✅ {status}</span>
+          </div>
+        </div>
+        <label>Mensagem</label>
+        <textarea id="msg-template" placeholder="Digite sua mensagem..."></textarea>
+        <div class="divider"></div>
+        <label>Prévia</label>
+        <div class="preview-box">
+          <div class="preview-bubble" id="msg-preview">...</div>
+        </div>
+      </div>
+      <button class="btn btn-green" onclick="saveConfig()">💾 Salvar mensagem</button>
+      <button class="btn btn-gray" onclick="resetMensagem()">↩️ Restaurar padrão</button>
+    </div>
+
+    <!-- ABA APARÊNCIA -->
+    <div id="tab-loja" style="display:none">
+      <div class="card">
+        <div class="card-title">🏪 Dados da loja</div>
+        <label>Nome da loja</label>
+        <input type="text" id="nome-loja" placeholder="D'Leia Moda Fitness" />
+        <div class="divider"></div>
+        <div class="card-title">🎨 Cor principal</div>
+        <div class="color-row">
+          <input type="text" id="cor-hex" placeholder="#1D9E75" />
+          <input type="color" id="cor-picker" value="#1D9E75" oninput="syncCor(this.value)" />
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+          <span class="tag-hint" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="setCor('#1D9E75')">Verde</span>
+          <span class="tag-hint" style="background:#e91e8c;color:#fff;border-color:#e91e8c" onclick="setCor('#e91e8c')">Rosa</span>
+          <span class="tag-hint" style="background:#6c3fc5;color:#fff;border-color:#6c3fc5" onclick="setCor('#6c3fc5')">Roxo</span>
+          <span class="tag-hint" style="background:#e65c00;color:#fff;border-color:#e65c00" onclick="setCor('#e65c00')">Laranja</span>
+          <span class="tag-hint" style="background:#1565c0;color:#fff;border-color:#1565c0" onclick="setCor('#1565c0')">Azul</span>
+          <span class="tag-hint" style="background:#333;color:#fff;border-color:#333" onclick="setCor('#333333')">Preto</span>
+        </div>
+      </div>
+      <button class="btn btn-green" onclick="saveConfig()">💾 Salvar aparência</button>
+    </div>
+  </div>
+
+  <!-- ========== UPLOAD ========== -->
+  <div class="section active" id="sec-upload">
+    <div class="card">
+      <div class="card-title">📸 Selecionar etiquetas</div>
+      <div class="alert alert-info">A IA lê cada etiqueta e envia a foto + mensagem direto no WhatsApp do cliente!</div>
+      <div class="upload-area" onclick="document.getElementById('file-input').click()">
+        <div class="icon">📸</div>
+        <p>Toque para selecionar as fotos</p>
+        <span>Pode selecionar várias de uma vez</span>
+      </div>
+      <input type="file" id="file-input" accept="image/*" multiple onchange="onFilesSelected(this.files)">
+      <div class="thumb-grid" id="thumb-grid"></div>
+      <div class="alert alert-warn" id="aviso-intervalo" style="display:none; margin-top:12px;"></div>
+    </div>
+    <button class="btn btn-green" id="btn-send" onclick="startProcessing()" disabled>📲 Ler e enviar comprovantes</button>
+  </div>
+
+  <!-- ========== PROCESSANDO ========== -->
+  <div class="section" id="sec-processing">
+    <div class="card">
+      <div class="card-title">📤 Enviando comprovantes...</div>
+      <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+      <div class="progress-label">
+        <span id="prog-text">Iniciando...</span>
+        <span id="prog-pct">0%</span>
+      </div>
+      <div id="items-list" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <!-- ========== CONCLUÍDO ========== -->
+  <div class="section" id="sec-done">
+    <div class="card" style="text-align:center; padding:24px 16px;">
+      <div class="success-icon">✅</div>
+      <p style="font-size:17px; font-weight:700; color:var(--text-primary);">Lote concluído!</p>
+      <p style="font-size:13px; color:#888; margin-top:4px;">Comprovantes enviados com foto no WhatsApp</p>
+    </div>
+    <div class="summary-grid">
+      <div class="summary-box"><div class="num" id="s-total" style="color:var(--text-primary)">0</div><div class="lbl">Total</div></div>
+      <div class="summary-box"><div class="num" id="s-ok" style="color:#1D9E75">0</div><div class="lbl">Enviados</div></div>
+      <div class="summary-box"><div class="num" id="s-err" style="color:#dc3545">0</div><div class="lbl">Erros</div></div>
+    </div>
+    <div class="card" id="done-list"></div>
+    <button class="btn btn-green" onclick="resetApp()">📸 Novo lote</button>
+    <button class="btn btn-gray" onclick="setSection('sec-painel')" style="margin-top:8px">⚙️ Ir para o Painel</button>
+  </div>
+
+  <!-- ========== HISTÓRICO ========== -->
+  <div class="section" id="sec-historico">
+    <div class="card-title" style="margin-bottom:12px;">📋 Histórico de lotes enviados</div>
+    <div id="historico-lista"></div>
+    <button class="btn btn-gray" onclick="limparHistorico()" style="margin-top:8px">🗑️ Limpar histórico</button>
+    <button class="btn btn-gray" onclick="setSection('sec-upload')" style="margin-top:8px">📸 Voltar a enviar</button>
+  </div>
+
+</div>
+
+<script>
+const MSG_PADRAO = `Olá, *{nome}*! Seu pacote foi entregue! ✅`;
+
+const MSG_TAXA = `Olá, *{nome}*! Seu pacote foi entregue! ✅
+
+💰 Taxa cobrada pela Excursão: *R$ {taxa}*
+
+PIX: 🔑 daviddexten@gmail.com 👤 David Dextem (Mercado Pago)`;
+
+let selectedFiles = [];
+let dadosLidos = [];
+
+// ===== CONFIG =====
+function saveConfig() {
+  localStorage.setItem('anthropic_key', document.getElementById('anthropic-key').value.trim());
+  localStorage.setItem('evo_server',    document.getElementById('evo-server').value.trim().replace(/^https?:\/\//, '').replace(/\/$/, ''));
+  localStorage.setItem('evo_instance',  document.getElementById('evo-instance').value.trim());
+  localStorage.setItem('evo_apikey',    document.getElementById('evo-apikey').value.trim());
+  const intervaloTexto = document.getElementById('intervalo-envio').value.trim().toLowerCase();
+  if (intervaloTexto === '' || intervaloTexto === 'auto') {
+    localStorage.setItem('intervalo_envio', 'auto');
+  } else {
+    const intervaloVal = parseInt(intervaloTexto, 10);
+    localStorage.setItem('intervalo_envio', isNaN(intervaloVal) || intervaloVal < 0 ? 'auto' : String(intervaloVal));
+  }
+  localStorage.setItem('msg_template',  document.getElementById('msg-template').value);
+  localStorage.setItem('nome_loja',     document.getElementById('nome-loja').value.trim());
+  localStorage.setItem('cor_loja',      document.getElementById('cor-hex').value.trim());
+  aplicarAparencia();
+  alert('✅ Configurações salvas!');
+}
+
+function loadConfig() {
+  document.getElementById('anthropic-key').value = localStorage.getItem('anthropic_key') || '';
+  document.getElementById('evo-server').value    = localStorage.getItem('evo_server') || '';
+  document.getElementById('evo-instance').value  = localStorage.getItem('evo_instance') || '';
+  document.getElementById('evo-apikey').value    = localStorage.getItem('evo_apikey') || '';
+  document.getElementById('intervalo-envio').value = localStorage.getItem('intervalo_envio') || 'auto';
+  document.getElementById('msg-template').value      = localStorage.getItem('msg_template') || MSG_PADRAO;
+  document.getElementById('nome-loja').value         = localStorage.getItem('nome_loja') || "D'Leia Moda Fitness";
+  document.getElementById('cor-hex').value           = localStorage.getItem('cor_loja') || '#1D9E75';
+  document.getElementById('cor-picker').value        = localStorage.getItem('cor_loja') || '#1D9E75';
+  aplicarAparencia();
+  atualizarPreview();
+}
+
+function aplicarAparencia() {
+  const cor = localStorage.getItem('cor_loja') || '#1D9E75';
+  const nome = localStorage.getItem('nome_loja') || "D'Leia Moda Fitness";
+  document.documentElement.style.setProperty('--cor-loja', cor);
+  document.getElementById('nome-loja-topbar').textContent = nome;
+}
+
+function resetMensagem() {
+  document.getElementById('msg-template').value = MSG_PADRAO;
+  atualizarPreview();
+}
+
+function syncCor(val) {
+  document.getElementById('cor-hex').value = val;
+}
+
+function setCor(hex) {
+  document.getElementById('cor-hex').value = hex;
+  document.getElementById('cor-picker').value = hex;
+}
+
+function inserirTag(tag) {
+  const el = document.getElementById('msg-template');
+  const start = el.selectionStart;
+  const end = el.selectionEnd;
+  const text = el.value;
+  el.value = text.slice(0, start) + tag + text.slice(end);
+  el.selectionStart = el.selectionEnd = start + tag.length;
+  el.focus();
+  atualizarPreview();
+}
+
+function atualizarPreview() {
+  const tpl = document.getElementById('msg-template').value;
+  const preview = tpl
+    .replace(/{nome}/g, 'Tarsila Beckman')
+    .replace(/{box}/g, '153')
+    .replace(/{setor}/g, 'Verde / Calçadão - Rua B')
+    .replace(/{status}/g, 'PAGO');
+  document.getElementById('msg-preview').textContent = preview;
+}
+
+document.getElementById('msg-template').addEventListener('input', atualizarPreview);
+document.getElementById('cor-hex').addEventListener('input', function() {
+  if (this.value.match(/^#[0-9A-Fa-f]{6}$/)) {
+    document.getElementById('cor-picker').value = this.value;
+  }
+});
+
+// ===== NAVEGAÇÃO =====
+function setSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showTab(id, btn) {
+  document.querySelectorAll('#sec-painel [id^=tab-]').forEach(t => t.style.display = 'none');
+  document.getElementById(id).style.display = 'block';
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ===== UPLOAD =====
+function calcularIntervaloRecomendado(qtd) {
+  if (qtd <= 20) return 4;
+  if (qtd <= 50) return 6;
+  return 10;
+}
+
+function onFilesSelected(files) {
+  selectedFiles = Array.from(files);
+  renderThumbGrid();
+  document.getElementById('btn-send').disabled = selectedFiles.length === 0;
+  atualizarAvisoIntervalo();
+}
+
+function renderThumbGrid() {
+  const grid = document.getElementById('thumb-grid');
+  grid.innerHTML = '';
+  selectedFiles.forEach((f, i) => {
+    const url = URL.createObjectURL(f);
+    grid.innerHTML += `
+      <div class="thumb">
+        <img src="${url}">
+        <span class="num">${i+1}</span>
+        <button class="remover" onclick="removerFoto(${i})" title="Remover esta foto">✕</button>
+      </div>`;
+  });
+}
+
+function removerFoto(i) {
+  selectedFiles.splice(i, 1);
+  renderThumbGrid();
+  document.getElementById('btn-send').disabled = selectedFiles.length === 0;
+  atualizarAvisoIntervalo();
+}
+
+function atualizarAvisoIntervalo() {
+  const aviso = document.getElementById('aviso-intervalo');
+  if (!aviso) return;
+  const qtd = selectedFiles.length;
+  if (qtd === 0) { aviso.style.display = 'none'; return; }
+
+  const segundos = calcularIntervaloRecomendado(qtd);
+  const tempoTotalSeg = (qtd - 1) * segundos;
+  const minutos = Math.floor(tempoTotalSeg / 60);
+  const segs = tempoTotalSeg % 60;
+  const tempoTexto = minutos > 0 ? `${minutos}min ${segs}s` : `${segs}s`;
+
+  aviso.style.display = 'block';
+  aviso.innerHTML = `⏱️ <b>${qtd} etiqueta${qtd > 1 ? 's' : ''}</b> selecionada${qtd > 1 ? 's' : ''} · intervalo de <b>${segundos}s</b> entre envios · tempo estimado: <b>${tempoTexto}</b>`;
+}
+
+// ===== PROCESSAMENTO =====
+function updateProgress(done, total) {
+  const pct = Math.round((done / total) * 100);
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-pct').textContent = pct + '%';
+  document.getElementById('prog-text').textContent = done < total ? `Processando ${done+1} de ${total}...` : 'Concluído!';
+}
+
+function renderItems(items) {
+  document.getElementById('items-list').innerHTML = items.map((it, i) => `
+    <div class="item-row">
+      <img class="item-thumb" src="${it.previewUrl}" />
+      <div class="item-info">
+        <div class="name" id="iname-${i}">${it.file.name}</div>
+        <div class="detail" id="idetail-${i}">Aguardando...</div>
+      </div>
+      <span class="badge badge-wait" id="ibadge-${i}">Fila</span>
+    </div>`).join('');
+}
+
+function updateItem(i, nome, detail, badge, badgeClass) {
+  const n = document.getElementById('iname-'+i);
+  const d = document.getElementById('idetail-'+i);
+  const b = document.getElementById('ibadge-'+i);
+  if(n) n.textContent = nome;
+  if(d) d.textContent = detail;
+  if(b) { b.textContent = badge; b.className = 'badge ' + badgeClass; }
+}
+
+async function startProcessing() {
+  const anthropicKey = localStorage.getItem('anthropic_key');
+  const evoServer     = localStorage.getItem('evo_server');
+  const evoInstance   = localStorage.getItem('evo_instance');
+  const evoApiKey     = localStorage.getItem('evo_apikey');
+
+  if (!anthropicKey || !evoServer || !evoInstance || !evoApiKey) {
+    alert('Configure todas as chaves no Painel antes de enviar.');
+    return;
+  }
+
+  dadosLidos = [];
+  const items = selectedFiles.map(f => ({ file:f, previewUrl: URL.createObjectURL(f) }));
+  setSection('sec-processing');
+  renderItems(items);
+
+  let ok = 0, err = 0;
+  const inicioLote = Date.now();
+
+  // Usa o valor manual do Painel só se o usuário mudou de "auto"; senão calcula pelo volume
+  const intervaloManual = localStorage.getItem('intervalo_envio');
+  const segundosIntervalo = (intervaloManual && intervaloManual !== 'auto')
+    ? parseInt(intervaloManual, 10)
+    : calcularIntervaloRecomendado(selectedFiles.length);
+  const intervaloEnvios = segundosIntervalo * 1000;
+
+  for (let i = 0; i < selectedFiles.length; i++) {
+    updateProgress(i, selectedFiles.length);
+    updateItem(i, selectedFiles[i].name, 'IA lendo a imagem...', 'Lendo', 'badge-proc');
+    let dadosParciais = null;
+    try {
+      const dados = await lerEtiqueta(selectedFiles[i], anthropicKey);
+      dadosParciais = dados;
+      if (!dados || !dados.telefone) throw new Error('Telefone não encontrado');
+      updateItem(i, dados.nome || selectedFiles[i].name, `${dados.telefone} · Enviando...`, 'Enviando', 'badge-proc');
+      await enviarFoto(selectedFiles[i], dados, evoServer, evoInstance, evoApiKey);
+      updateItem(i, dados.nome, `${dados.telefone} · ✓ Enviado`, 'Enviado', 'badge-ok');
+      dadosLidos.push({ ...dados, file: selectedFiles[i], previewUrl: items[i].previewUrl, sucesso: true });
+      ok++;
+    } catch(e) {
+      updateItem(i, (dadosParciais && dadosParciais.nome) || selectedFiles[i].name, 'Erro: ' + e.message, 'Erro', 'badge-err');
+      dadosLidos.push({
+        ...(dadosParciais || {}),
+        nome: (dadosParciais && dadosParciais.nome) || selectedFiles[i].name,
+        file: selectedFiles[i],
+        sucesso: false,
+        previewUrl: items[i].previewUrl,
+        erro: e.message
+      });
+      err++;
+    }
+    updateProgress(i+1, selectedFiles.length);
+
+    // Intervalo entre envios (proteção contra bloqueio do WhatsApp por volume),
+    // só aplica se ainda houver próximo item na fila
+    if (i < selectedFiles.length - 1 && intervaloEnvios > 0) {
+      await contagemRegressiva(intervaloEnvios);
+    }
+  }
+
+  await sleep(400);
+  salvarHistorico(inicioLote, ok, err);
+  showDone(ok, err);
+}
+
+function contagemRegressiva(ms) {
+  return new Promise((resolve) => {
+    const segundosTotais = Math.ceil(ms / 1000);
+    let restante = segundosTotais;
+    const textoEl = document.getElementById('prog-text');
+    const tick = () => {
+      if (textoEl) textoEl.textContent = `Aguardando ${restante}s antes do próximo envio...`;
+      if (restante <= 0) { resolve(); return; }
+      restante--;
+      setTimeout(tick, 1000);
+    };
+    tick();
+  });
+}
+
+async function lerEtiqueta(file, apiKey) {
+  const b64 = await toBase64(file);
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 300,
+      messages: [{ role:'user', content:[
+        { type:'image', source:{ type:'base64', media_type: file.type||'image/jpeg', data: b64 }},
+        { type:'text', text:`Leia esta etiqueta de pedido. Pode ser uma etiqueta D'Leia normal ou uma etiqueta de excursao. Responda APENAS com JSON puro sem markdown:
+{"nome":"nome completo do cliente","telefone":"apenas digitos com DDD sem espacos ex 81998765432","box":"numero do box se houver, senao vaga ou numero do assento","setor":"setor e rua se houver, senao setor da excursao","excursao":"nome da excursao se houver, senao vazio","cidade":"cidade do cliente se houver, senao vazio","status":"PAGO ou outro status","taxa":"REGRA ESTRITA: olhe APENAS o campo Excursao da etiqueta. Se o texto do campo Excursao terminar EXATAMENTE com ' - $' (um cifrao isolado, com espaco e hifen antes) retorne 5.00. Se terminar EXATAMENTE com ' - $$' (dois cifroes juntos) retorne 10.00. Em QUALQUER outro caso -- incluindo quando nao ha cifrao, quando o cifrao aparece em outro lugar da imagem (como em valores de carne, comprovantes de pagamento, logos, ou qualquer outro texto que nao seja o campo Excursao), ou quando ha qualquer ambiguidade -- retorne sem taxa. NUNCA infira taxa a partir de números, valores monetários de boletos/comprovantes, ou qualquer simbolo fora do campo Excursao da etiqueta D'Leia/excursao."}` }
+      ]}]
+    })
+  });
+  if (!resp.ok) throw new Error('Claude erro ' + resp.status);
+  const data = await resp.json();
+  const text = data.content.map(c => c.text||'').join('').replace(/```json|```/g,'').trim();
+  return JSON.parse(text);
+}
+
+async function enviarFoto(file, dados, serverUrl, instanceName, apiKey) {
+  const b64 = await toBase64(file);
+  const telefone = dados.telefone.replace(/\D/g,'');
+  const caption = montarMensagem(dados);
+  const url = `https://${serverUrl}/message/sendMedia/${instanceName}`;
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'apikey': apiKey },
+    body: JSON.stringify({
+      number: `55${telefone}`,
+      mediatype: 'image',
+      mimetype: file.type || 'image/jpeg',
+      media: b64,
+      fileName: file.name || 'comprovante.jpg',
+      caption: caption
+    })
+  });
+  if (!resp.ok) {
+    const txt = await resp.text();
+    throw new Error('Evolution API foto erro ' + resp.status + ': ' + txt.slice(0,120));
+  }
+}
+
+async function enviarMensagem(dados, serverUrl, instanceName, apiKey) {
+  const telefone = dados.telefone.replace(/\D/g,'');
+  const mensagem = montarMensagem(dados);
+  const url = `https://${serverUrl}/message/sendText/${instanceName}`;
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'apikey': apiKey },
+    body: JSON.stringify({ number: `55${telefone}`, text: mensagem })
+  });
+  if (!resp.ok) {
+    const txt = await resp.text();
+    throw new Error('Evolution API msg erro ' + resp.status + ': ' + txt.slice(0,120));
+  }
+}
+
+function montarMensagem(dados) {
+  const temTaxa = dados.taxa && dados.taxa !== 'sem taxa' && dados.taxa !== '' && dados.taxa !== '0';
+  const tpl = temTaxa ? MSG_TAXA : (localStorage.getItem('msg_template') || MSG_PADRAO);
+  return tpl
+    .replace(/{nome}/g, dados.nome || '?')
+    .replace(/{box}/g, dados.box || '?')
+    .replace(/{setor}/g, dados.setor || '?')
+    .replace(/{status}/g, dados.status || 'PAGO')
+    .replace(/{taxa}/g, dados.taxa || '?');
+}
+
+function showDone(ok, err) {
+  document.getElementById('s-total').textContent = dadosLidos.length;
+  document.getElementById('s-ok').textContent = ok;
+  document.getElementById('s-err').textContent = err;
+  document.getElementById('done-list').innerHTML = dadosLidos.map((r, i) => `
+    <div class="item-row">
+      <img class="item-thumb" src="${r.previewUrl}" />
+      <div class="item-info">
+        <div class="name">${r.nome||'?'}</div>
+        <div class="detail">${r.telefone||r.erro||''}</div>
+      </div>
+      ${r.sucesso
+        ? `<span class="badge badge-ok">Enviado</span>`
+        : `<button class="btn-share" onclick="compartilharFoto(${i})">📤 Enviar Manualmente</button>`
+      }
+    </div>`).join('');
+  setSection('sec-done');
+}
+
+async function compartilharFoto(i) {
+  const item = dadosLidos[i];
+  if (!item || !item.file) {
+    alert('Foto não disponível para compartilhar.');
+    return;
+  }
+
+  // Só monta a legenda do comprovante se a IA conseguiu ler o telefone
+  const legenda = item.telefone ? montarMensagem(item) : '';
+
+  // Web Share API com arquivo: abre o menu nativo do celular (WhatsApp, etc)
+  if (navigator.canShare && navigator.canShare({ files: [item.file] })) {
+    try {
+      await navigator.share({
+        files: [item.file],
+        text: legenda
+      });
+      return;
+    } catch (e) {
+      // Usuário cancelou o compartilhamento ou navegador bloqueou — tenta fallback
+      if (e.name === 'AbortError') return;
+    }
+  }
+
+  // Fallback: navegador não suporta compartilhar arquivo (ex: PC) — baixa a foto
+  const link = document.createElement('a');
+  link.href = item.previewUrl;
+  link.download = item.file.name || 'comprovante.jpg';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  alert('Seu navegador não permite compartilhar direto. A foto foi baixada — envie manualmente pelo WhatsApp.');
+}
+
+function salvarHistorico(inicioLote, ok, err) {
+  const historico = JSON.parse(localStorage.getItem('historico_lotes') || '[]');
+
+  const itens = dadosLidos.map(r => ({
+    nome: r.nome || '?',
+    telefone: r.telefone || '',
+    box: r.box || '',
+    setor: r.setor || '',
+    excursao: r.excursao || '',
+    taxa: r.taxa && r.taxa !== 'sem taxa' ? r.taxa : '',
+    sucesso: !!r.sucesso,
+    erro: r.erro || ''
+  }));
+
+  historico.unshift({
+    data: new Date(inicioLote).toISOString(),
+    total: dadosLidos.length,
+    enviados: ok,
+    erros: err,
+    itens: itens
+  });
+
+  // Mantém só os últimos 30 lotes para não inchar o localStorage
+  while (historico.length > 30) historico.pop();
+
+  localStorage.setItem('historico_lotes', JSON.stringify(historico));
+}
+
+function formatarDataHistorico(isoStr) {
+  const d = new Date(isoStr);
+  const dataStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const horaStr = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  return `${dataStr} às ${horaStr}`;
+}
+
+function abrirHistorico() {
+  const historico = JSON.parse(localStorage.getItem('historico_lotes') || '[]');
+  const container = document.getElementById('historico-lista');
+
+  if (historico.length === 0) {
+    container.innerHTML = `<div class="alert alert-info">Nenhum lote enviado ainda.</div>`;
+  } else {
+    container.innerHTML = historico.map((lote, idx) => {
+      const valorTaxas = lote.itens
+        .filter(it => it.taxa)
+        .reduce((soma, it) => soma + (parseFloat(it.taxa) || 0), 0);
+
+      return `
+      <div class="card" style="margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleLoteHistorico(${idx})">
+          <div>
+            <div style="font-size:13px; font-weight:600; color:var(--text-primary);">${formatarDataHistorico(lote.data)}</div>
+            <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">
+              ${lote.total} etiquetas · ${lote.enviados} enviadas${lote.erros > 0 ? ` · ${lote.erros} erro(s)` : ''}${valorTaxas > 0 ? ` · R$ ${valorTaxas.toFixed(2)} em taxas` : ''}
+            </div>
+          </div>
+          <span style="font-size:18px; color:var(--text-secondary);" id="lote-arrow-${idx}">▾</span>
+        </div>
+        <div id="lote-detalhe-${idx}" style="display:none; margin-top:10px; padding-top:10px; border-top:1px solid var(--row-border);">
+          ${lote.itens.map(it => `
+            <div class="item-row" style="padding:6px 0;">
+              <div class="item-info">
+                <div class="name" style="font-size:12px;">${it.nome}</div>
+                <div class="detail">${it.telefone || ''}${it.taxa ? ` · R$ ${parseFloat(it.taxa).toFixed(2)}` : ''}</div>
+              </div>
+              <span class="badge ${it.sucesso ? 'badge-ok' : 'badge-err'}" style="font-size:10px;">${it.sucesso ? 'Enviado' : 'Erro'}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  setSection('sec-historico');
+}
+
+function toggleLoteHistorico(idx) {
+  const det = document.getElementById('lote-detalhe-' + idx);
+  const arrow = document.getElementById('lote-arrow-' + idx);
+  const aberto = det.style.display !== 'none';
+  det.style.display = aberto ? 'none' : 'block';
+  arrow.textContent = aberto ? '▾' : '▴';
+}
+
+function limparHistorico() {
+  if (confirm('Apagar todo o histórico de lotes? Essa ação não pode ser desfeita.')) {
+    localStorage.removeItem('historico_lotes');
+    abrirHistorico();
+  }
+}
+
+function resetApp() {
+  selectedFiles=[]; dadosLidos=[];
+  document.getElementById('thumb-grid').innerHTML='';
+  document.getElementById('file-input').value='';
+  document.getElementById('btn-send').disabled=true;
+  setSection('sec-upload');
+}
+
+function toBase64(file) {
+  return new Promise((res, rej) => {
+    if (!file || !file.type || !file.type.startsWith('image/')) {
+      rej(new Error('Arquivo não é uma imagem válida'));
+      return;
+    }
+
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+
+    const limpar = () => URL.revokeObjectURL(url);
+
+    img.onload = () => {
+      try {
+        if (!img.width || !img.height) {
+          limpar();
+          rej(new Error('Imagem com dimensões inválidas'));
+          return;
+        }
+
+        // Limita o lado maior a 1600px para evitar travar em fotos muito grandes (12MP+)
+        const MAX_LADO = 1600;
+        let w = img.width;
+        let h = img.height;
+        const maiorLado = Math.max(w, h);
+        if (maiorLado > MAX_LADO) {
+          const escala = MAX_LADO / maiorLado;
+          w = Math.round(w * escala);
+          h = Math.round(h * escala);
+        }
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          limpar();
+          rej(new Error('Não foi possível processar a imagem neste dispositivo'));
+          return;
+        }
+
+        const isLandscape = w > h;
+        if (isLandscape) {
+          // Rotaciona 90 graus para deixar vertical
+          canvas.width = h;
+          canvas.height = w;
+          ctx.translate(canvas.width / 2, canvas.height / 2);
+          ctx.rotate(90 * Math.PI / 180);
+          ctx.drawImage(img, -w / 2, -h / 2, w, h);
+        } else {
+          canvas.width = w;
+          canvas.height = h;
+          ctx.drawImage(img, 0, 0, w, h);
+        }
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        if (!dataUrl || dataUrl === 'data:,') {
+          limpar();
+          rej(new Error('Falha ao converter imagem (canvas vazio)'));
+          return;
+        }
+
+        res(dataUrl.split(',')[1]);
+        limpar();
+      } catch (e) {
+        limpar();
+        rej(new Error('Erro ao processar imagem: ' + e.message));
+      }
+    };
+
+    img.onerror = () => {
+      limpar();
+      rej(new Error('Não foi possível abrir esta imagem (arquivo corrompido ou formato não suportado)'));
+    };
+
+    img.src = url;
+  });
+}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+function aplicarTema() {
+  const tema = localStorage.getItem('tema') || 'light';
+  if (tema === 'dark') {
+    document.body.setAttribute('data-theme', 'dark');
+    document.getElementById('theme-toggle-btn').textContent = '☀️';
+  } else {
+    document.body.removeAttribute('data-theme');
+    document.getElementById('theme-toggle-btn').textContent = '🌙';
+  }
+}
+
+function toggleTheme() {
+  const atual = localStorage.getItem('tema') || 'light';
+  const novo = atual === 'light' ? 'dark' : 'light';
+  localStorage.setItem('tema', novo);
+  aplicarTema();
+}
+
+aplicarTema();
+loadConfig();
+
+// ===== PWA: registro do service worker e aviso de atualização =====
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').then((reg) => {
+
+      // Verifica se já tem uma versão nova esperando
+      if (reg.waiting) {
+        mostrarAvisoAtualizacao(reg);
+      }
+
+      // Detecta quando uma nova versão termina de instalar
+      reg.addEventListener('updatefound', () => {
+        const novoWorker = reg.installing;
+        novoWorker.addEventListener('statechange', () => {
+          if (novoWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            mostrarAvisoAtualizacao(reg);
+          }
+        });
+      });
+
+      // Verifica por atualizações a cada 60 segundos enquanto o app está aberto
+      setInterval(() => reg.update(), 60000);
+    }).catch((err) => console.log('Erro ao registrar service worker:', err));
+
+    // Quando o novo service worker assume o controle, recarrega a página
+    let jaRecarregou = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (jaRecarregou) return;
+      jaRecarregou = true;
+      window.location.reload();
+    });
+  });
+}
+
+function mostrarAvisoAtualizacao(reg) {
+  if (document.getElementById('update-banner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'update-banner';
+  banner.className = 'update-banner';
+  banner.innerHTML = `
+    <span>🆕 Nova versão do app disponível!</span>
+    <button class="update-btn" id="update-btn">Atualizar agora</button>
+  `;
+  document.body.appendChild(banner);
+  requestAnimationFrame(() => banner.classList.add('show'));
+
+  document.getElementById('update-btn').addEventListener('click', () => {
+    const worker = reg.waiting || reg.installing;
+    if (worker) worker.postMessage('SKIP_WAITING');
+    banner.querySelector('span').textContent = '🔄 Atualizando...';
+    document.getElementById('update-btn').style.display = 'none';
+  });
+}
+</script>
+</body>
+</html>
