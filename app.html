@@ -794,12 +794,18 @@ function salvarLimiteMensal() {
   alert('✅ Limite salvo!');
 }
 
+const SENHA_ADMIN_LIMITE = '6DOfJ9cv6RQJ\\7vP.e{6|RMZX7£1\\o';
+
 function destrancarLimite() {
-  if (confirm('Deseja editar o limite mensal desta loja?')) {
-    document.getElementById('limite-travado-view').style.display = 'none';
-    document.getElementById('limite-edicao-view').style.display = 'block';
-    document.getElementById('limite-mensal').value = localStorage.getItem('limite_mensal') || '';
+  const senhaDigitada = prompt('Digite a senha de administrador para editar o limite mensal:');
+  if (senhaDigitada === null) return; // cancelou
+  if (senhaDigitada !== SENHA_ADMIN_LIMITE) {
+    alert('❌ Senha incorreta. A edição do limite permanece bloqueada.');
+    return;
   }
+  document.getElementById('limite-travado-view').style.display = 'none';
+  document.getElementById('limite-edicao-view').style.display = 'block';
+  document.getElementById('limite-mensal').value = localStorage.getItem('limite_mensal') || '';
 }
 
 function resetarContadorMensal() {
