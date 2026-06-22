@@ -341,7 +341,6 @@
         <div class="progress-bar" style="margin-top:8px;">
           <div class="progress-fill" id="uso-mensal-barra" style="width:0%"></div>
         </div>
-        <button class="btn btn-gray" onclick="resetarContadorMensal()" style="margin-top:12px;">🔄 Resetar contador manualmente</button>
       </div>
     </div>
   </div>
@@ -806,15 +805,6 @@ function destrancarLimite() {
   document.getElementById('limite-travado-view').style.display = 'none';
   document.getElementById('limite-edicao-view').style.display = 'block';
   document.getElementById('limite-mensal').value = localStorage.getItem('limite_mensal') || '';
-}
-
-function resetarContadorMensal() {
-  if (confirm('Resetar o contador de uso deste mês para 0? Use isso apenas se precisar corrigir manualmente.')) {
-    localStorage.setItem('uso_mensal_mes', obterMesAtual());
-    localStorage.setItem('uso_mensal_contador', '0');
-    atualizarResumoUsoMensal();
-    alert('✅ Contador resetado!');
-  }
 }
 
 function atualizarResumoUsoMensal() {
