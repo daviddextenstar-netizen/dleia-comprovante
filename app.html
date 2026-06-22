@@ -218,9 +218,17 @@
       </div>
       <div class="card">
         <div class="card-title">⏱️ Intervalo entre envios</div>
-        <div class="alert alert-info">O app calcula o intervalo automaticamente pela quantidade de etiquetas: até 20 → 4s · até 50 → 6s · mais de 50 → 10s. Deixe em branco ou "auto" para usar esse cálculo. Para fixar um valor próprio, digite o número de segundos.</div>
-        <label>Segundos de espera entre cada envio <span class="label-hint">deixe "auto" para calcular sozinho</span></label>
-        <input type="text" id="intervalo-envio" placeholder="auto" />
+        <div class="alert alert-info">O app calcula o intervalo automaticamente pela quantidade de etiquetas: até 20 → 4s · até 50 → 6s · mais de 50 → 10s. Toque em "Automático" para usar esse cálculo, ou escolha um tempo fixo.</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+          <span class="tag-hint" onclick="setIntervalo('auto')">🤖 Automático</span>
+          <span class="tag-hint" onclick="setIntervalo('3')">3s</span>
+          <span class="tag-hint" onclick="setIntervalo('5')">5s</span>
+          <span class="tag-hint" onclick="setIntervalo('8')">8s</span>
+          <span class="tag-hint" onclick="setIntervalo('10')">10s</span>
+          <span class="tag-hint" onclick="setIntervalo('15')">15s</span>
+        </div>
+        <label>Ou digite um tempo específico (segundos) <span class="label-hint">deixe "auto" para calcular sozinho</span></label>
+        <input type="text" id="intervalo-envio" placeholder="auto" inputmode="numeric" />
       </div>
       <button class="btn btn-green" onclick="saveConfig()">💾 Salvar configurações</button>
     </div>
@@ -492,6 +500,10 @@ function syncCor(val) {
 function setCor(hex) {
   document.getElementById('cor-hex').value = hex;
   document.getElementById('cor-picker').value = hex;
+}
+
+function setIntervalo(valor) {
+  document.getElementById('intervalo-envio').value = valor;
 }
 
 function inserirTag(tag) {
