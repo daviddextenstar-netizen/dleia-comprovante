@@ -197,6 +197,7 @@
       <button class="nav-tab active" onclick="showTab('tab-apis', this)">🔑 APIs</button>
       <button class="nav-tab" onclick="showTab('tab-mensagem', this)">💬 Mensagem</button>
       <button class="nav-tab" onclick="showTab('tab-loja', this)">🎨 Aparência</button>
+      <button class="nav-tab" onclick="showTab('tab-plano', this)">📦 Plano</button>
     </div>
 
     <!-- ABA APIs -->
@@ -307,6 +308,29 @@
       </div>
       <button class="btn btn-green" onclick="saveConfig()">💾 Salvar aparência</button>
     </div>
+
+    <!-- ABA PLANO -->
+    <div id="tab-plano" style="display:none">
+      <div class="card">
+        <div class="card-title">📦 Limite de envios mensal</div>
+        <div class="alert alert-info">Defina quantos comprovantes essa loja pode enviar por mês. O contador reseta automaticamente todo dia 1. Deixe em branco ou "ilimitado" para não ter limite.</div>
+        <label>Limite mensal de envios</label>
+        <input type="text" id="limite-mensal" placeholder="ilimitado" inputmode="numeric" />
+      </div>
+
+      <div class="card">
+        <div class="card-title">📊 Uso deste mês</div>
+        <div id="uso-mensal-resumo" style="text-align:center; padding:8px 0;">
+          <div style="font-size:32px; font-weight:700; color:var(--text-primary);" id="uso-mensal-numero">0</div>
+          <div style="font-size:13px; color:var(--text-secondary);" id="uso-mensal-label">comprovantes enviados</div>
+        </div>
+        <div class="progress-bar" style="margin-top:8px;">
+          <div class="progress-fill" id="uso-mensal-barra" style="width:0%"></div>
+        </div>
+        <button class="btn btn-gray" onclick="resetarContadorMensal()" style="margin-top:12px;">🔄 Resetar contador manualmente</button>
+      </div>
+      <button class="btn btn-green" onclick="saveConfig()">💾 Salvar limite</button>
+    </div>
   </div>
 
   <!-- ========== UPLOAD ========== -->
@@ -402,6 +426,8 @@ function saveConfig() {
   localStorage.setItem('pix_chave',     document.getElementById('pix-chave').value.trim());
   localStorage.setItem('pix_nome',      document.getElementById('pix-nome').value.trim());
   localStorage.setItem('pix_banco',     document.getElementById('pix-banco').value.trim());
+  const limiteTexto = document.getElementById('limite-mensal').value.trim().toLowerCase();
+  localStorage.setItem('limite_mensal', limiteTexto);
   localStorage.setItem('nome_loja',     document.getElementById('nome-loja').value.trim());
   localStorage.setItem('cor_loja',      document.getElementById('cor-hex').value.trim());
   aplicarAparencia();
@@ -421,6 +447,8 @@ function loadConfig() {
   document.getElementById('pix-chave').value         = localStorage.getItem('pix_chave') || '';
   document.getElementById('pix-nome').value          = localStorage.getItem('pix_nome') || '';
   document.getElementById('pix-banco').value         = localStorage.getItem('pix_banco') || '';
+  document.getElementById('limite-mensal').value     = localStorage.getItem('limite_mensal') || '';
+  atualizarResumoUsoMensal();
   document.getElementById('nome-loja').value         = localStorage.getItem('nome_loja') || "Minha Loja";
   document.getElementById('cor-hex').value           = localStorage.getItem('cor_loja') || '#3a3f44';
   document.getElementById('cor-picker').value        = localStorage.getItem('cor_loja') || '#3a3f44';
@@ -509,6 +537,7 @@ function showTab(id, btn) {
   document.getElementById(id).style.display = 'block';
   document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  if (id === 'tab-plano') atualizarResumoUsoMensal();
 }
 
 // ===== UPLOAD =====
@@ -704,6 +733,69 @@ function verificarLotePendente() {
   }
 }
 
+// ===== LIMITE MENSAL: contador de envios que reseta todo dia 1 =====
+function obterMesAtual() {
+  const agora = new Date();
+  return `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function verificarResetMensal() {
+  const mesSalvo = localStorage.getItem('uso_mensal_mes');
+  const mesAtual = obterMesAtual();
+  if (mesSalvo !== mesAtual) {
+    localStorage.setItem('uso_mensal_mes', mesAtual);
+    localStorage.setItem('uso_mensal_contador', '0');
+  }
+}
+
+function obterUsoMensal() {
+  verificarResetMensal();
+  return parseInt(localStorage.getItem('uso_mensal_contador') || '0', 10);
+}
+
+function incrementarUsoMensal(qtd) {
+  verificarResetMensal();
+  const atual = obterUsoMensal();
+  localStorage.setItem('uso_mensal_contador', String(atual + qtd));
+}
+
+function resetarContadorMensal() {
+  if (confirm('Resetar o contador de uso deste mês para 0? Use isso apenas se precisar corrigir manualmente.')) {
+    localStorage.setItem('uso_mensal_mes', obterMesAtual());
+    localStorage.setItem('uso_mensal_contador', '0');
+    atualizarResumoUsoMensal();
+    alert('✅ Contador resetado!');
+  }
+}
+
+function obterLimiteMensal() {
+  const valor = (localStorage.getItem('limite_mensal') || '').trim().toLowerCase();
+  if (valor === '' || valor === 'ilimitado') return null;
+  const num = parseInt(valor, 10);
+  return isNaN(num) || num <= 0 ? null : num;
+}
+
+function atualizarResumoUsoMensal() {
+  const usoEl = document.getElementById('uso-mensal-numero');
+  const labelEl = document.getElementById('uso-mensal-label');
+  const barraEl = document.getElementById('uso-mensal-barra');
+  if (!usoEl) return;
+
+  const uso = obterUsoMensal();
+  const limite = obterLimiteMensal();
+
+  usoEl.textContent = uso;
+  if (limite) {
+    labelEl.textContent = `de ${limite} comprovantes neste mês`;
+    const pct = Math.min(100, Math.round((uso / limite) * 100));
+    barraEl.style.width = pct + '%';
+    barraEl.style.background = pct >= 100 ? '#dc3545' : (pct >= 80 ? '#e6a700' : 'var(--cor-loja,#3a3f44)');
+  } else {
+    labelEl.textContent = 'comprovantes enviados (sem limite definido)';
+    barraEl.style.width = '0%';
+  }
+}
+
 async function startProcessing() {
   const anthropicKey = localStorage.getItem('anthropic_key');
   const evoServer     = localStorage.getItem('evo_server');
@@ -713,6 +805,21 @@ async function startProcessing() {
   if (!anthropicKey || !evoServer || !evoInstance || !evoApiKey) {
     alert('Configure todas as chaves no Painel antes de enviar.');
     return;
+  }
+
+  // Verifica se o lote ultrapassaria o limite mensal configurado
+  const limiteMensal = obterLimiteMensal();
+  if (limiteMensal) {
+    const usoAtual = obterUsoMensal();
+    const restante = limiteMensal - usoAtual;
+    if (restante <= 0) {
+      alert(`🚫 Limite mensal de ${limiteMensal} comprovantes já foi atingido! O contador reseta automaticamente no dia 1 do próximo mês, ou você pode ajustar o limite em ⚙️ Painel → 📦 Plano.`);
+      return;
+    }
+    if (selectedFiles.length > restante) {
+      const continuar = confirm(`⚠️ Esse lote tem ${selectedFiles.length} fotos, mas restam apenas ${restante} envios disponíveis neste mês (limite de ${limiteMensal}).\n\nDeseja continuar mesmo assim? O envio vai parar automaticamente ao atingir o limite.`);
+      if (!continuar) return;
+    }
   }
 
   dadosLidos = [];
@@ -734,6 +841,20 @@ async function startProcessing() {
   const intervaloEnvios = segundosIntervalo * 1000;
 
   for (let i = 0; i < selectedFiles.length; i++) {
+    // Para automaticamente se o limite mensal foi atingido no meio do lote
+    if (limiteMensal && obterUsoMensal() >= limiteMensal) {
+      updateItem(i, selectedFiles[i].name, `Limite mensal de ${limiteMensal} atingido — envio interrompido`, 'Erro', 'badge-err');
+      dadosLidos.push({
+        nome: selectedFiles[i].name,
+        file: selectedFiles[i],
+        sucesso: false,
+        previewUrl: items[i].previewUrl,
+        erro: `Limite mensal de ${limiteMensal} atingido`
+      });
+      err++;
+      continue;
+    }
+
     salvarProgressoLote(i, selectedFiles.length);
     updateProgress(i, selectedFiles.length);
     updateItem(i, selectedFiles[i].name, 'IA lendo a imagem...', 'Lendo', 'badge-proc');
@@ -754,6 +875,7 @@ async function startProcessing() {
       await enviarFoto(selectedFiles[i], dados, evoServer, evoInstance, evoApiKey);
       updateItem(i, dados.nome, `${dados.telefone} · ✓ Enviado`, 'Enviado', 'badge-ok');
       dadosLidos.push({ ...dados, file: selectedFiles[i], previewUrl: items[i].previewUrl, sucesso: true });
+      incrementarUsoMensal(1);
       ok++;
     } catch(e) {
       updateItem(i, (dadosParciais && dadosParciais.nome) || selectedFiles[i].name, 'Erro: ' + e.message, 'Erro', 'badge-err');
