@@ -17,6 +17,7 @@
     --text-secondary: #888;
     --text-tertiary: #aaa;
     --input-bg: #fafafa;
+    --input-field-bg: #fafafa;
     --input-border: #ddd;
     --row-border: #f0f0f0;
     --gray-bg: #eee;
@@ -35,6 +36,7 @@
     --text-secondary: #aaa;
     --text-tertiary: #777;
     --input-bg: #2a2a2a;
+    --input-field-bg: #f0f0f0;
     --input-border: #3a3a3a;
     --row-border: #2c2c2c;
     --gray-bg: #2c2c2c;
@@ -58,11 +60,11 @@
   .card-title { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
   input[type=password], input[type=text], input[type=color], textarea, select {
     width: 100%; padding: 10px 12px; border: 1px solid var(--input-border); border-radius: 8px;
-    font-size: 14px; margin-bottom: 8px; background: var(--input-bg); font-family: inherit; color: var(--text-primary);
+    font-size: 14px; margin-bottom: 8px; background: var(--input-field-bg); font-family: inherit; color: #111;
   }
   input[type=color] { height: 42px; padding: 4px 8px; cursor: pointer; }
-  textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
-  input:focus, textarea:focus { outline: none; border-color: var(--cor-loja, #3a3f44); background: #fff; }
+  textarea { resize: vertical; min-height: 120px; line-height: 1.6; color: #111; }
+  input:focus, textarea:focus { outline: none; border-color: var(--cor-loja, #3a3f44); background: #fff; color: #111; }
   label { font-size: 13px; color: var(--gray-text); display: block; margin-bottom: 4px; font-weight: 500; }
   .label-hint { font-size: 11px; color: var(--text-tertiary); font-weight: normal; margin-left: 4px; }
   .btn { width: 100%; padding: 13px; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 8px; transition: opacity .15s; }
@@ -242,7 +244,7 @@
         </div>
         <div id="campo-taxa-todos-valor" style="display:none; margin-top:10px;">
           <label>Valor da taxa para todos (R$)</label>
-          <input type="text" id="taxa-todos-valor" placeholder="5.00" />
+          <input type="text" id="taxa-todos-valor" placeholder="5.00" inputmode="decimal" />
         </div>
       </div>
 
