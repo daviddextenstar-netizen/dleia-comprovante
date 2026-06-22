@@ -138,7 +138,23 @@
   .nav-tab.active { background: var(--card-bg); color: var(--text-primary); box-shadow: 0 1px 3px rgba(0,0,0,.1); }
   .preview-box { background:#ECE5DD; border-radius:10px; padding:14px; margin-top:8px; }
   .preview-bubble { background:#DCF8C6; border-radius:10px 10px 2px 10px; padding:10px 12px; font-size:13px; line-height:1.7; color:#111; max-width:90%; margin-left:auto; white-space:pre-wrap; }
-  .color-row { display:grid; grid-template-columns:1fr 80px; gap:8px; align-items:end; margin-bottom:8px; }
+  .color-picker-row { display:flex; gap:12px; align-items:flex-end; margin-bottom:8px; }
+  .color-preview-wrap {
+    position: relative; width: 56px; height: 56px; flex-shrink: 0; cursor: pointer;
+    border-radius: 12px; overflow: hidden; border: 2px solid var(--card-border);
+    display: block;
+  }
+  .color-preview-wrap input[type=color] {
+    position: absolute; top: -8px; left: -8px; width: 72px; height: 72px;
+    opacity: 0; cursor: pointer; padding: 0; margin: 0; border: none;
+  }
+  .color-preview-swatch {
+    position: absolute; inset: 0; background: var(--cor-loja, #3a3f44);
+    pointer-events: none; display: flex; align-items: center; justify-content: center;
+  }
+  .color-preview-swatch::after {
+    content: '🎨'; font-size: 20px; opacity: .85;
+  }
   .tag-hint { display:inline-block; background: var(--tag-bg); border-radius:4px; padding:2px 6px; font-size:11px; color: var(--tag-text); margin:2px; cursor:pointer; border:1px solid var(--tag-border); }
   .tag-hint:hover { filter: brightness(1.2); }
   .switch-row { display:flex; align-items:center; justify-content:space-between; gap:12px; cursor:pointer; }
@@ -269,9 +285,15 @@
         <input type="text" id="nome-loja" placeholder="Minha Loja" />
         <div class="divider"></div>
         <div class="card-title">🎨 Cor principal</div>
-        <div class="color-row">
-          <input type="text" id="cor-hex" placeholder="#3a3f44" />
-          <input type="color" id="cor-picker" value="#3a3f44" oninput="syncCor(this.value)" />
+        <div class="color-picker-row">
+          <label for="cor-picker" class="color-preview-wrap" title="Toque para escolher a cor">
+            <input type="color" id="cor-picker" value="#3a3f44" oninput="syncCor(this.value)" />
+            <span class="color-preview-swatch" id="cor-preview-swatch"></span>
+          </label>
+          <div style="flex:1;">
+            <label>Código da cor</label>
+            <input type="text" id="cor-hex" placeholder="#3a3f44" />
+          </div>
         </div>
         <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
           <span class="tag-hint" style="background:#3a3f44;color:#fff;border-color:#3a3f44" onclick="setCor('#3a3f44')">Chumbo</span>
