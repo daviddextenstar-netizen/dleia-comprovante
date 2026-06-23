@@ -298,6 +298,7 @@
           <label>Valor da taxa para todos (R$)</label>
           <input type="text" id="taxa-todos-valor" placeholder="5.00" inputmode="decimal" />
         </div>
+        <button class="btn btn-green" onclick="salvarTaxaTodos()" style="margin-top:10px;">💾 Salvar cobrança para todos</button>
       </div>
 
       <div class="card" style="margin-top:12px;">
@@ -550,6 +551,19 @@ function resetMensagem() {
 function toggleCampoTaxaTodos() {
   const ativado = document.getElementById('taxa-todos-toggle').checked;
   document.getElementById('campo-taxa-todos-valor').style.display = ativado ? 'block' : 'none';
+}
+
+function salvarTaxaTodos() {
+  const ativado = document.getElementById('taxa-todos-toggle').checked;
+  localStorage.setItem('taxa_todos_ativa', ativado ? '1' : '0');
+  const valorTexto = document.getElementById('taxa-todos-valor').value.trim().replace(',', '.');
+  if (ativado && (!valorTexto || isNaN(parseFloat(valorTexto)))) {
+    alert('⚠️ Digite um valor válido para a taxa antes de ativar a cobrança para todos.');
+    return;
+  }
+  localStorage.setItem('taxa_todos_valor', valorTexto);
+  atualizarAvisoTaxaTodos();
+  alert(ativado ? '✅ Cobrança de taxa para todos ativada!' : '✅ Cobrança de taxa para todos desativada.');
 }
 
 function syncCor(val) {
