@@ -348,8 +348,8 @@
 
         <!-- Visualização editável (sem limite ainda, ou após destrancar) -->
         <div id="limite-edicao-view" style="margin-top:12px;">
-          <label>Limite mensal de envios</label>
-          <input type="text" id="limite-mensal" placeholder="ilimitado" inputmode="numeric" />
+          <label>Limite mensal de envios <span class="label-hint">digite 0 para ilimitado</span></label>
+          <input type="text" id="limite-mensal" placeholder="0 = ilimitado" inputmode="numeric" />
           <button class="btn btn-green" onclick="salvarLimiteMensal()">💾 Salvar limite</button>
         </div>
       </div>
@@ -849,7 +849,7 @@ function limiteJaFoiDefinido() {
 function salvarLimiteMensal() {
   const limiteTexto = document.getElementById('limite-mensal').value.trim().toLowerCase();
   if (limiteTexto === '') {
-    alert('Digite um número de limite, ou "ilimitado" se não quiser restringir.');
+    alert('Digite um número de limite, ou 0 se não quiser restringir (ilimitado).');
     return;
   }
   localStorage.setItem('limite_mensal', limiteTexto);
@@ -942,7 +942,8 @@ function destrancarLimite() {
     if (!autorizado) return;
     document.getElementById('limite-travado-view').style.display = 'none';
     document.getElementById('limite-edicao-view').style.display = 'block';
-    document.getElementById('limite-mensal').value = localStorage.getItem('limite_mensal') || '';
+    const valorSalvo = localStorage.getItem('limite_mensal') || '';
+    document.getElementById('limite-mensal').value = (valorSalvo === 'ilimitado') ? '0' : valorSalvo;
   });
 }
 
