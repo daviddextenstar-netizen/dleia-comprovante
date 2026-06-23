@@ -873,7 +873,7 @@ function abrirLeitorQrAdmin(callback) {
     <div class="qr-modal-box">
       <p style="font-weight:600; font-size:15px; margin-bottom:8px; color:var(--text-primary);">📷 Escaneie o QR Code de administrador</p>
       <video id="qr-video" playsinline muted></video>
-      <div class="qr-modal-status" id="qr-status">Apontando câmera para o QR Code...</div>
+      <div class="qr-modal-status" id="qr-status">Carregando leitor de QR Code...</div>
       <button class="btn btn-gray" id="qr-cancelar">Cancelar</button>
     </div>
   `;
@@ -893,7 +893,30 @@ function abrirLeitorQrAdmin(callback) {
 
   overlay.querySelector('#qr-cancelar').addEventListener('click', () => encerrar(false));
 
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+  // Espera a biblioteca jsQR carregar (até 5 segundos), em vez de assumir que já carregou.
+  // Se não carregar nesse tempo, avisa claramente em vez de ficar girando para sempre.
+  function esperarJsQRCarregar(tentativasRestantes) {
+    return new Promise((resolve, reject) => {
+      function checar(restam) {
+        if (typeof window.jsQR === 'function') {
+          resolve();
+          return;
+        }
+        if (restam <= 0) {
+          reject(new Error('jsQR_nao_carregou'));
+          return;
+        }
+        setTimeout(() => checar(restam - 1), 200);
+      }
+      checar(tentativasRestantes);
+    });
+  }
+
+  esperarJsQRCarregar(25) // até ~5 segundos
+    .then(() => {
+      statusEl.textContent = 'Apontando câmera para o QR Code...';
+      return navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    })
     .then((mediaStream) => {
       stream = mediaStream;
       video.srcObject = stream;
@@ -909,14 +932,14 @@ function abrirLeitorQrAdmin(callback) {
           canvas.height = video.videoHeight;
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
           const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const codigo = window.jsQR ? jsQR(imageData.data, imageData.width, imageData.height) : null;
+          const codigo = jsQR(imageData.data, imageData.width, imageData.height);
           if (codigo && codigo.data) {
             if (codigo.data === SENHA_ADMIN_LIMITE) {
               statusEl.textContent = '✅ QR Code válido!';
               setTimeout(() => encerrar(true), 400);
               return;
             } else {
-              statusEl.textContent = '❌ QR Code inválido. Tente novamente.';
+              statusEl.textContent = '❌ QR Code lido, mas não é o correto. Tente novamente.';
             }
           }
         }
@@ -925,8 +948,12 @@ function abrirLeitorQrAdmin(callback) {
       requestAnimationFrame(tick);
     })
     .catch((err) => {
-      statusEl.textContent = '❌ Não foi possível acessar a câmera: ' + err.message;
-      setTimeout(() => encerrar(false), 1500);
+      if (err.message === 'jsQR_nao_carregou') {
+        statusEl.textContent = '❌ Não foi possível carregar o leitor de QR Code. Verifique sua internet e tente novamente.';
+      } else {
+        statusEl.textContent = '❌ Não foi possível acessar a câmera: ' + err.message;
+      }
+      setTimeout(() => encerrar(false), 2500);
     });
 }
 
