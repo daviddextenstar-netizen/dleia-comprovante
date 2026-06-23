@@ -185,7 +185,6 @@
   }
   .qr-modal-status { font-size: 13px; color: var(--text-secondary); margin: 12px 0; min-height: 18px; }
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
 </head>
 <body>
 
@@ -867,13 +866,19 @@ function abrirLeitorQrAdmin(callback) {
     return;
   }
 
+  if (!('BarcodeDetector' in window)) {
+    alert('Este navegador não tem suporte nativo à leitura de QR Code. Tente pelo Chrome atualizado no Android, ou digite a senha manualmente (em breve).');
+    callback(false);
+    return;
+  }
+
   const overlay = document.createElement('div');
   overlay.className = 'qr-modal-overlay';
   overlay.innerHTML = `
     <div class="qr-modal-box">
       <p style="font-weight:600; font-size:15px; margin-bottom:8px; color:var(--text-primary);">📷 Escaneie o QR Code de administrador</p>
       <video id="qr-video" playsinline muted></video>
-      <div class="qr-modal-status" id="qr-status">Carregando leitor de QR Code...</div>
+      <div class="qr-modal-status" id="qr-status">Apontando câmera para o QR Code...</div>
       <button class="btn btn-gray" id="qr-cancelar">Cancelar</button>
     </div>
   `;
@@ -893,54 +898,31 @@ function abrirLeitorQrAdmin(callback) {
 
   overlay.querySelector('#qr-cancelar').addEventListener('click', () => encerrar(false));
 
-  // Espera a biblioteca jsQR carregar (até 5 segundos), em vez de assumir que já carregou.
-  // Se não carregar nesse tempo, avisa claramente em vez de ficar girando para sempre.
-  function esperarJsQRCarregar(tentativasRestantes) {
-    return new Promise((resolve, reject) => {
-      function checar(restam) {
-        if (typeof window.jsQR === 'function') {
-          resolve();
-          return;
-        }
-        if (restam <= 0) {
-          reject(new Error('jsQR_nao_carregou'));
-          return;
-        }
-        setTimeout(() => checar(restam - 1), 200);
-      }
-      checar(tentativasRestantes);
-    });
-  }
+  const detector = new BarcodeDetector({ formats: ['qr_code'] });
 
-  esperarJsQRCarregar(25) // até ~5 segundos
-    .then(() => {
-      statusEl.textContent = 'Apontando câmera para o QR Code...';
-      return navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-    })
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
     .then((mediaStream) => {
       stream = mediaStream;
       video.srcObject = stream;
       video.play();
 
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d', { willReadFrequently: true });
-
-      function tick() {
+      async function tick() {
         if (pararLeitura) return;
         if (video.readyState === video.HAVE_ENOUGH_DATA) {
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const codigo = jsQR(imageData.data, imageData.width, imageData.height);
-          if (codigo && codigo.data) {
-            if (codigo.data === SENHA_ADMIN_LIMITE) {
-              statusEl.textContent = '✅ QR Code válido!';
-              setTimeout(() => encerrar(true), 400);
-              return;
-            } else {
-              statusEl.textContent = '❌ QR Code lido, mas não é o correto. Tente novamente.';
+          try {
+            const codigos = await detector.detect(video);
+            if (codigos && codigos.length > 0) {
+              const valorLido = codigos[0].rawValue;
+              if (valorLido === SENHA_ADMIN_LIMITE) {
+                statusEl.textContent = '✅ QR Code válido!';
+                setTimeout(() => encerrar(true), 400);
+                return;
+              } else {
+                statusEl.textContent = '❌ QR Code lido, mas não é o correto. Tente novamente.';
+              }
             }
+          } catch (e) {
+            // Falha pontual na detecção de um frame não é erro fatal — tenta o próximo frame
           }
         }
         requestAnimationFrame(tick);
@@ -948,12 +930,8 @@ function abrirLeitorQrAdmin(callback) {
       requestAnimationFrame(tick);
     })
     .catch((err) => {
-      if (err.message === 'jsQR_nao_carregou') {
-        statusEl.textContent = '❌ Não foi possível carregar o leitor de QR Code. Verifique sua internet e tente novamente.';
-      } else {
-        statusEl.textContent = '❌ Não foi possível acessar a câmera: ' + err.message;
-      }
-      setTimeout(() => encerrar(false), 2500);
+      statusEl.textContent = '❌ Não foi possível acessar a câmera: ' + err.message;
+      setTimeout(() => encerrar(false), 2000);
     });
 }
 
