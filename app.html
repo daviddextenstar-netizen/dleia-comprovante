@@ -445,7 +445,7 @@ const MSG_PADRAO = `Olá, *{nome}*! Seu pacote foi entregue! ✅`;
 
 const MSG_TAXA = `Olá, *{nome}*! Seu pacote foi entregue! ✅
 
-💰 Taxa cobrada pela Excursão: *R$ {taxa}*
+💵 Taxa cobrada pela Excursão: *R$ {taxa}*
 
 PIX: {pix_chave}
 Nome: {pix_nome}
@@ -943,6 +943,42 @@ function incrementarUsoMensal(qtd) {
   localStorage.setItem('uso_mensal_contador', String(atual + qtd));
 }
 
+// ===== DETECÇÃO DE FOTO DUPLICADA: evita reenviar a mesma etiqueta em lotes diferentes =====
+// Usa um hash do conteúdo do arquivo (não o nome) para identificar com certeza se é a mesma imagem,
+// mesmo que tenha sido renomeada ou vinda de uma seleção diferente.
+async function calcularHashArquivo(file) {
+  // Em contextos sem HTTPS (raro, já que o app roda no GitHub Pages), crypto.subtle
+  // pode não existir — nesse caso, usa um identificador simples (nome+tamanho) como
+  // alternativa, em vez de travar a checagem de duplicidade
+  if (!window.crypto || !window.crypto.subtle) {
+    return `${file.name}_${file.size}_${file.lastModified}`;
+  }
+  const buffer = await file.arrayBuffer();
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function obterHashesEnviados() {
+  try {
+    return JSON.parse(localStorage.getItem('hashes_enviados') || '[]');
+  } catch (e) {
+    return [];
+  }
+}
+
+function registrarHashEnviado(hash) {
+  const lista = obterHashesEnviados();
+  lista.push(hash);
+  // Mantém só os últimos 2000 hashes para não inchar o localStorage indefinidamente
+  while (lista.length > 2000) lista.shift();
+  localStorage.setItem('hashes_enviados', JSON.stringify(lista));
+}
+
+function jaFoiEnviadoAntes(hash) {
+  return obterHashesEnviados().includes(hash);
+}
+
 function obterLimiteMensal() {
   const valor = (localStorage.getItem('limite_mensal') || '').trim().toLowerCase();
   if (valor === '' || valor === 'ilimitado') return null;
@@ -1178,6 +1214,24 @@ async function startProcessing() {
 
     salvarProgressoLote(i, selectedFiles.length);
     updateProgress(i, selectedFiles.length);
+
+    // Verifica se esta exata foto já foi enviada antes (em outro lote, mesmo dia ou anterior)
+    const hashArquivo = await calcularHashArquivo(selectedFiles[i]);
+    if (jaFoiEnviadoAntes(hashArquivo)) {
+      updateItem(i, selectedFiles[i].name, 'Esta foto já foi enviada antes — envio bloqueado', 'Duplicada', 'badge-err');
+      dadosLidos.push({
+        nome: selectedFiles[i].name,
+        file: selectedFiles[i],
+        sucesso: false,
+        duplicado: true,
+        previewUrl: items[i].previewUrl,
+        erro: 'Foto duplicada — já enviada anteriormente'
+      });
+      err++;
+      updateProgress(i+1, selectedFiles.length);
+      continue;
+    }
+
     updateItem(i, selectedFiles[i].name, 'Lendo a imagem...', 'Lendo', 'badge-proc');
     let dadosParciais = null;
     try {
@@ -1197,6 +1251,7 @@ async function startProcessing() {
       updateItem(i, dados.nome, `${dados.telefone} · ✓ Enviado`, 'Enviado', 'badge-ok');
       dadosLidos.push({ ...dados, file: selectedFiles[i], previewUrl: items[i].previewUrl, sucesso: true });
       incrementarUsoMensal(1);
+      registrarHashEnviado(hashArquivo);
       limparErroDeApi();
       ok++;
     } catch(e) {
@@ -1356,7 +1411,9 @@ function showDone(ok, err) {
       </div>
       ${r.sucesso
         ? `<span class="badge badge-ok">Enviado</span>`
-        : `<button class="btn-share" onclick="compartilharFoto(${i})">📤 Enviar Manualmente</button>`
+        : (r.duplicado
+          ? `<span class="badge badge-wait">Já enviada</span>`
+          : `<button class="btn-share" onclick="compartilharFoto(${i})">📤 Enviar Manualmente</button>`)
       }
     </div>`).join('');
   setSection('sec-done');
