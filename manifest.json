@@ -1,6 +1,6 @@
 {
-  "name": "ComprovAI",
-  "short_name": "ComprovAI",
+  "name": "ComproV",
+  "short_name": "ComproV",
   "description": "Envio automático de comprovantes via WhatsApp com leitura de etiqueta por IA",
   "start_url": "./app.html",
   "scope": "./",
