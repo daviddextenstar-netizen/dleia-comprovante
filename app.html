@@ -1007,6 +1007,16 @@ async function startProcessing() {
     return;
   }
 
+  // Exige que um plano (limite mensal, mesmo que "ilimitado") tenha sido definido
+  // explicitamente antes de liberar qualquer envio — evita uso sem plano configurado.
+  if (!limiteJaFoiDefinido()) {
+    alert('📦 Nenhum plano foi configurado ainda para esta loja. Vá em ⚙️ Painel → 📦 Plano e defina o limite mensal antes de enviar comprovantes.');
+    setSection('sec-painel');
+    const btnPlano = document.querySelector('.nav-tab[onclick*="tab-plano"]');
+    if (btnPlano) showTab('tab-plano', btnPlano);
+    return;
+  }
+
   // Verifica se o lote ultrapassaria o limite mensal configurado
   const limiteMensal = obterLimiteMensal();
   if (limiteMensal) {
