@@ -887,6 +887,34 @@ function mostrarAvisoCustomizado(texto, icone) {
   overlay.querySelector('#aviso-custom-ok').addEventListener('click', () => overlay.remove());
 }
 
+// Confirmação customizada (Sim/Não), sem o rascunho padrão do navegador.
+// Recebe um callback que é chamado com true (confirmou) ou false (cancelou).
+function confirmarCustomizado(texto, callback, icone) {
+  const overlay = document.createElement('div');
+  overlay.className = 'qr-modal-overlay';
+  overlay.innerHTML = `
+    <div class="qr-modal-box">
+      <div style="font-size:32px; margin-bottom:8px;">${icone || '❓'}</div>
+      <p style="font-size:14px; color:var(--text-primary); line-height:1.6; margin-bottom:16px;">${texto}</p>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-gray" id="confirm-custom-nao" style="flex:1;">Cancelar</button>
+        <button class="btn btn-green" id="confirm-custom-sim" style="flex:1;">Confirmar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#confirm-custom-sim').addEventListener('click', () => { overlay.remove(); callback(true); });
+  overlay.querySelector('#confirm-custom-nao').addEventListener('click', () => { overlay.remove(); callback(false); });
+}
+
+// Mesma confirmação customizada, porém em formato de Promise — permite usar com
+// "await", mantendo o código sequencial legível em vez de aninhar callbacks.
+function confirmarCustomizadoAsync(texto, icone) {
+  return new Promise((resolve) => {
+    confirmarCustomizado(texto, resolve, icone);
+  });
+}
+
 // ===== RETOMAR LOTE: salva progresso para continuar se a página recarregar =====
 function salvarProgressoLote(indiceAtual, total) {
   localStorage.setItem('lote_em_andamento', JSON.stringify({
@@ -1096,12 +1124,14 @@ function destrancarLimite() {
 function resetarContadorMensal() {
   abrirLeitorQrAdmin((autorizado) => {
     if (!autorizado) return;
-    if (confirm('Resetar o contador de uso deste mês para 0?')) {
-      localStorage.setItem('uso_mensal_mes', obterMesAtual());
-      localStorage.setItem('uso_mensal_contador', '0');
-      atualizarResumoUsoMensal();
-      mostrarAvisoCustomizado('Contador resetado!', '✅');
-    }
+    confirmarCustomizado('Resetar o contador de uso deste mês para 0?', (confirmou) => {
+      if (confirmou) {
+        localStorage.setItem('uso_mensal_mes', obterMesAtual());
+        localStorage.setItem('uso_mensal_contador', '0');
+        atualizarResumoUsoMensal();
+        mostrarAvisoCustomizado('Contador resetado!', '✅');
+      }
+    }, '🔄');
   });
 }
 
@@ -1174,7 +1204,7 @@ async function startProcessing() {
       return;
     }
     if (selectedFiles.length > restante) {
-      const continuar = confirm(`⚠️ Esse lote tem ${selectedFiles.length} fotos, mas restam apenas ${restante} envios disponíveis neste mês (limite de ${limiteMensal}).\n\nDeseja continuar mesmo assim? O envio vai parar automaticamente ao atingir o limite.`);
+      const continuar = await confirmarCustomizadoAsync(`Esse lote tem ${selectedFiles.length} fotos, mas restam apenas ${restante} envios disponíveis neste mês (limite de ${limiteMensal}).<br><br>Deseja continuar mesmo assim? O envio vai parar automaticamente ao atingir o limite.`, '⚠️');
       if (!continuar) return;
     }
   }
@@ -1538,10 +1568,17 @@ function toggleLoteHistorico(idx) {
 }
 
 function limparHistorico() {
-  if (confirm('Apagar todo o histórico de lotes? Essa ação não pode ser desfeita.')) {
-    localStorage.removeItem('historico_lotes');
-    abrirHistorico();
+  const historico = JSON.parse(localStorage.getItem('historico_lotes') || '[]');
+  if (historico.length === 0) {
+    mostrarAvisoCustomizado('Sem histórico para limpar.', '📋');
+    return;
   }
+  confirmarCustomizado('Apagar todo o histórico de lotes? Essa ação não pode ser desfeita.', (confirmou) => {
+    if (confirmou) {
+      localStorage.removeItem('historico_lotes');
+      abrirHistorico();
+    }
+  }, '🗑️');
 }
 
 function resetApp() {
