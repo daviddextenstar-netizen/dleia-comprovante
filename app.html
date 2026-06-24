@@ -361,6 +361,12 @@
 
         <!-- Visualização editável (sem limite ainda, ou após destrancar) -->
         <div id="limite-edicao-view" style="margin-top:12px;">
+          <label>Plano <span class="label-hint">toque para preencher o limite automaticamente</span></label>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+            <span class="tag-hint" onclick="setLimitePlano(250)">Básico</span>
+            <span class="tag-hint" onclick="setLimitePlano(500)">Intermediário</span>
+            <span class="tag-hint" onclick="setLimitePlano(1000)">Avançado</span>
+          </div>
           <label>Limite mensal de envios <span class="label-hint">digite 0 para ilimitado</span></label>
           <input type="text" id="limite-mensal" placeholder="0 = ilimitado" inputmode="numeric" />
           <label>Dia do ciclo de cobrança <span class="label-hint">dia em que o cliente assinou</span></label>
@@ -582,6 +588,10 @@ function setCor(hex) {
 
 function setIntervalo(valor) {
   document.getElementById('intervalo-envio').value = valor;
+}
+
+function setLimitePlano(valor) {
+  document.getElementById('limite-mensal').value = valor;
 }
 
 function inserirTag(tag) {
