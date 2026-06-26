@@ -266,23 +266,20 @@
       <button class="nav-tab" onclick="showTab('tab-plano', this)">📦 Plano</button>
     </div>
 
-    <!-- ABA APIs -->
+    <!-- ABA APIs (ATIVAÇÃO POR CÓDIGO) -->
     <div id="tab-apis">
       <div class="card">
-        <div class="card-title">🔑 Leitura de Etiquetas</div>
-        <label>Chave API <span class="label-hint">⚠️ NOVA para cada cliente — console.anthropic.com/settings/keys</span></label>
-        <input type="password" id="anthropic-key" placeholder="sk-ant-..." autocomplete="off" data-lpignore="true" data-1p-ignore />
+        <div class="card-title">🔑 Ativar minha loja</div>
+        <label>Código de acesso <span class="label-hint">Digite o código que você recebeu</span></label>
+        <input type="text" id="codigo-acesso" placeholder="Ex: LOJA1234" autocomplete="off" data-lpignore="true" data-1p-ignore style="text-transform:uppercase" />
+        <div id="codigo-status" style="margin-top:10px; font-size:14px;"></div>
       </div>
-      <div class="card">
-        <div class="card-title">📱 Evolution API (WhatsApp)</div>
-        <label>URL do servidor <span class="label-hint">✅ SEMPRE A MESMA, sem https://</span></label>
-        <input type="text" id="evo-server" placeholder="evolution-api-ll04.srv1770269.hstgr.cloud" autocomplete="off" data-lpignore="true" data-1p-ignore />
-        <label>Nome da instância <span class="label-hint">⚠️ NOVO para cada cliente</span></label>
-        <input type="text" id="evo-instance" placeholder="minha-loja" autocomplete="off" data-lpignore="true" data-1p-ignore />
-        <label>Token da instância (API Key) <span class="label-hint">⚠️ NOVO para cada cliente — aparece ao criar a instância</span></label>
-        <input type="password" id="evo-apikey" placeholder="91635C7604D9-4FC1-BCF7-4D9B3E0658FB" autocomplete="off" data-lpignore="true" data-1p-ignore />
-      </div>
-      <button class="btn btn-green" onclick="saveConfig()">💾 Salvar configurações</button>
+      <button class="btn btn-green" id="btn-ativar" onclick="ativarPorCodigo()">🔓 Ativar</button>
+      <!-- Campos ocultos: o código preenche eles automaticamente (mantém o resto do app funcionando igual) -->
+      <input type="hidden" id="anthropic-key" />
+      <input type="hidden" id="evo-server" />
+      <input type="hidden" id="evo-instance" />
+      <input type="hidden" id="evo-apikey" />
     </div>
 
     <!-- ABA MENSAGEM -->
@@ -536,11 +533,81 @@ function saveConfig() {
   mostrarAvisoCustomizado('Configurações salvas!', '✅');
 }
 
+// ===== ATIVAÇÃO POR CÓDIGO ÚNICO =====
+const COMPROV_BACKEND = 'https://app.comprov.cloud';
+
+async function ativarPorCodigo() {
+  const campo = document.getElementById('codigo-acesso');
+  const status = document.getElementById('codigo-status');
+  const btn = document.getElementById('btn-ativar');
+  const codigo = campo.value.trim().toUpperCase();
+
+  if (!codigo) {
+    status.innerHTML = '<span style="color:#c0392b">Digite o código de acesso.</span>';
+    return;
+  }
+
+  btn.disabled = true;
+  const textoOriginal = btn.innerHTML;
+  btn.innerHTML = '⏳ Ativando...';
+  status.innerHTML = '<span style="color:#888">Verificando o código...</span>';
+
+  try {
+    const resp = await fetch(`${COMPROV_BACKEND}/config/${encodeURIComponent(codigo)}`);
+
+    if (resp.status === 404) {
+      status.innerHTML = '<span style="color:#c0392b">Código não encontrado. Confira e tente de novo.</span>';
+      return;
+    }
+    if (resp.status === 403) {
+      status.innerHTML = '<span style="color:#c0392b">Assinatura inativa. Entre em contato com o suporte.</span>';
+      return;
+    }
+    if (!resp.ok) {
+      status.innerHTML = '<span style="color:#c0392b">Erro ao ativar. Tente novamente em instantes.</span>';
+      return;
+    }
+
+    const cfg = await resp.json();
+
+    // Salva as 4 informações nos mesmos lugares que o app já usa
+    const servidor = (cfg.evolution_url || '').replace(/^https?:\/\//, '').replace(/\/$/, '');
+    localStorage.setItem('anthropic_key', cfg.anthropic_key || '');
+    localStorage.setItem('evo_server',    servidor);
+    localStorage.setItem('evo_instance',  cfg.instancia || '');
+    localStorage.setItem('evo_apikey',    cfg.instancia_token || '');
+    localStorage.setItem('codigo_acesso', codigo);
+
+    // Atualiza os campos ocultos também
+    document.getElementById('anthropic-key').value = cfg.anthropic_key || '';
+    document.getElementById('evo-server').value    = servidor;
+    document.getElementById('evo-instance').value  = cfg.instancia || '';
+    document.getElementById('evo-apikey').value    = cfg.instancia_token || '';
+
+    limparErroDeApi();
+    atualizarVisibilidadeAbaApis();
+    status.innerHTML = '<span style="color:#1e8449">✅ Loja ativada com sucesso!</span>';
+
+    const nome = cfg.nome_loja ? ` (${cfg.nome_loja})` : '';
+    setTimeout(() => {
+      mostrarAvisoCustomizado(`Loja ativada com sucesso${nome}! Agora é só enviar seus comprovantes.`, '✅');
+      setSection('sec-upload');
+    }, 600);
+
+  } catch (e) {
+    status.innerHTML = '<span style="color:#c0392b">Erro de conexão. Verifique sua internet e tente de novo.</span>';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = textoOriginal;
+  }
+}
+
 function loadConfig() {
   document.getElementById('anthropic-key').value = localStorage.getItem('anthropic_key') || '';
   document.getElementById('evo-server').value    = localStorage.getItem('evo_server') || '';
   document.getElementById('evo-instance').value  = localStorage.getItem('evo_instance') || '';
   document.getElementById('evo-apikey').value    = localStorage.getItem('evo_apikey') || '';
+  document.getElementById('codigo-acesso').value = localStorage.getItem('codigo_acesso') || '';
   const intervaloSalvo = localStorage.getItem('intervalo_envio') || 'auto';
   document.getElementById('intervalo-envio').value = intervaloSalvo;
   setIntervalo(intervaloSalvo);
@@ -1943,6 +2010,14 @@ aplicarTema();
 loadConfig();
 atualizarAvisoTaxaTodos();
 verificarFotosCompartilhadas();
+
+// Tela inicial inteligente: se a loja ainda não foi ativada (sem código salvo),
+// abre direto no Painel na aba de ativação. Se já ativou, segue normal (Enviar).
+if (!localStorage.getItem('codigo_acesso')) {
+  setSection('sec-painel');
+  const btnApis = document.getElementById('btn-tab-apis');
+  if (btnApis) showTab('tab-apis', btnApis);
+}
 
 // Se o app foi recarregado (fechado e reaberto) no meio de um lote, os arquivos
 // de imagem se perdem da memória — avisa o usuário em vez de deixar confuso
