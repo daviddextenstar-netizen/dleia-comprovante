@@ -7,7 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<meta name="theme-color" content="#3a3f44" id="meta-theme-color">
+<meta name="theme-color" content="#000000" id="meta-theme-color">
 <style>
   :root {
     --bg: #f5f5f0;
@@ -361,12 +361,12 @@
         <div class="card-title">🎨 Cor principal</div>
         <div class="color-picker-row">
           <label for="cor-picker" class="color-preview-wrap" title="Toque para escolher a cor">
-            <input type="color" id="cor-picker" value="#3a3f44" oninput="syncCor(this.value)" />
+            <input type="color" id="cor-picker" value="#000000" oninput="syncCor(this.value)" />
             <span class="color-preview-swatch" id="cor-preview-swatch"></span>
           </label>
           <div style="flex:1;">
             <label>Código da cor</label>
-            <input type="text" id="cor-hex" placeholder="#3a3f44" />
+            <input type="text" id="cor-hex" placeholder="#000000" />
           </div>
         </div>
         <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
@@ -602,8 +602,8 @@ function loadConfig() {
   document.getElementById('pix-nome').value          = localStorage.getItem('pix_nome') || '';
   document.getElementById('pix-banco').value         = localStorage.getItem('pix_banco') || '';
   atualizarResumoUsoMensal();
-  document.getElementById('cor-hex').value           = localStorage.getItem('cor_loja') || '#3a3f44';
-  document.getElementById('cor-picker').value        = localStorage.getItem('cor_loja') || '#3a3f44';
+  document.getElementById('cor-hex').value           = localStorage.getItem('cor_loja') || '#000000';
+  document.getElementById('cor-picker').value        = localStorage.getItem('cor_loja') || '#000000';
   aplicarAparencia();
   atualizarPreview();
   atualizarVisibilidadeAbaApis();
@@ -646,7 +646,7 @@ function limparErroDeApi() {
 }
 
 function aplicarAparencia() {
-  const cor = localStorage.getItem('cor_loja') || '#3a3f44';
+  const cor = localStorage.getItem('cor_loja') || '#000000';
   document.documentElement.style.setProperty('--cor-loja', cor);
   const metaTheme = document.getElementById('meta-theme-color');
   if (metaTheme) metaTheme.setAttribute('content', cor);
