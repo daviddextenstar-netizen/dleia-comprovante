@@ -165,6 +165,15 @@
   }
   .plano-btn:hover { filter: brightness(1.2); }
   .plano-btn:active { transform: scale(0.97); }
+  .accordion-header {
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; user-select: none; padding: 4px 0;
+  }
+  .accordion-header .card-title { margin-bottom: 0; }
+  .accordion-arrow { font-size: 13px; color: var(--text-secondary); transition: transform 0.2s; }
+  .accordion-arrow.aberto { transform: rotate(180deg); }
+  .accordion-body { overflow: hidden; transition: max-height 0.25s ease; }
+  .accordion-body.fechado { max-height: 0 !important; }
   .switch-row { display:flex; align-items:center; justify-content:space-between; gap:12px; cursor:pointer; }
   .switch-row .switch-label { font-size:14px; color:var(--text-primary); font-weight:500; }
   .switch { position:relative; display:inline-block; width:48px; height:26px; flex-shrink:0; }
@@ -257,18 +266,25 @@
     <!-- ABA MENSAGEM -->
     <div id="tab-mensagem" style="display:none">
       <div class="card">
-        <div class="card-title">⏱️ Intervalo entre envios</div>
-        <div class="alert alert-info">O app calcula o intervalo automaticamente pela quantidade de etiquetas: até 20 → 4s · até 50 → 6s · mais de 50 → 10s. Toque em "Automático" para usar esse cálculo, ou escolha um tempo fixo.</div>
-        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
-          <span class="tag-hint" onclick="setIntervalo('auto')">⏱️ Automático</span>
-          <span class="tag-hint" onclick="setIntervalo('3')">3s</span>
-          <span class="tag-hint" onclick="setIntervalo('5')">5s</span>
-          <span class="tag-hint" onclick="setIntervalo('8')">8s</span>
-          <span class="tag-hint" onclick="setIntervalo('10')">10s</span>
-          <span class="tag-hint" onclick="setIntervalo('15')">15s</span>
+        <div class="accordion-header" onclick="toggleAccordion('accordion-intervalo', this)">
+          <div class="card-title">⏱️ Intervalo entre envios</div>
+          <span class="accordion-arrow">▼</span>
         </div>
-        <label>Ou digite um tempo específico (segundos) <span class="label-hint">deixe "auto" para calcular sozinho</span></label>
-        <input type="text" id="intervalo-envio" placeholder="auto" inputmode="numeric" onfocus="this.select()" />
+        <div class="accordion-body fechado" id="accordion-intervalo" style="max-height:0;">
+          <div style="padding-top:12px;">
+            <div class="alert alert-info">O app calcula o intervalo automaticamente pela quantidade de etiquetas: até 20 → 4s · até 50 → 6s · mais de 50 → 10s. Toque em "Automático" para usar esse cálculo, ou escolha um tempo fixo.</div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+              <span class="tag-hint" onclick="setIntervalo('auto')">⏱️ Automático</span>
+              <span class="tag-hint" onclick="setIntervalo('3')">3s</span>
+              <span class="tag-hint" onclick="setIntervalo('5')">5s</span>
+              <span class="tag-hint" onclick="setIntervalo('8')">8s</span>
+              <span class="tag-hint" onclick="setIntervalo('10')">10s</span>
+              <span class="tag-hint" onclick="setIntervalo('15')">15s</span>
+            </div>
+            <label>Ou digite um tempo específico (segundos) <span class="label-hint">deixe "auto" para calcular sozinho</span></label>
+            <input type="text" id="intervalo-envio" placeholder="auto" inputmode="numeric" onfocus="this.select()" />
+          </div>
+        </div>
       </div>
       <div class="card">
         <div class="card-title">💬 Texto da mensagem</div>
@@ -369,11 +385,16 @@
 
         <!-- Visualização editável (sem limite ainda, ou após destrancar) -->
         <div id="limite-edicao-view" style="margin-top:12px;">
-          <label>Plano <span class="label-hint">toque para preencher o limite automaticamente</span></label>
-          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
-            <span class="plano-btn" onclick="setLimitePlano(250)">Básico</span>
-            <span class="plano-btn" onclick="setLimitePlano(500)">Intermediário</span>
-            <span class="plano-btn" onclick="setLimitePlano(1000)">Avançado</span>
+          <div class="accordion-header" onclick="toggleAccordion('accordion-planos', this)" style="margin-bottom:8px;">
+            <label style="margin:0; cursor:pointer;">Plano <span class="label-hint">toque para ver os planos</span></label>
+            <span class="accordion-arrow">▼</span>
+          </div>
+          <div class="accordion-body fechado" id="accordion-planos" style="max-height:0;">
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; padding-top:4px;">
+              <span class="plano-btn" onclick="setLimitePlano(300)">Básico<br><span style="font-size:11px; font-weight:400; opacity:0.7;">300 envios</span></span>
+              <span class="plano-btn" onclick="setLimitePlano(600)">Intermediário<br><span style="font-size:11px; font-weight:400; opacity:0.7;">600 envios</span></span>
+              <span class="plano-btn" onclick="setLimitePlano(1000)">Avançado<br><span style="font-size:11px; font-weight:400; opacity:0.7;">1000 envios</span></span>
+            </div>
           </div>
           <label>Limite mensal de envios <span class="label-hint">digite 0 para ilimitado</span></label>
           <input type="text" id="limite-mensal" placeholder="" inputmode="numeric" />
@@ -594,6 +615,21 @@ function setCor(hex) {
 
 function setIntervalo(valor) {
   document.getElementById('intervalo-envio').value = valor;
+}
+
+function toggleAccordion(id, header) {
+  const body = document.getElementById(id);
+  const arrow = header.querySelector('.accordion-arrow');
+  const aberto = !body.classList.contains('fechado');
+  if (aberto) {
+    body.style.maxHeight = '0';
+    body.classList.add('fechado');
+    if (arrow) arrow.classList.remove('aberto');
+  } else {
+    body.classList.remove('fechado');
+    body.style.maxHeight = body.scrollHeight + 'px';
+    if (arrow) arrow.classList.add('aberto');
+  }
 }
 
 function setLimitePlano(valor) {
