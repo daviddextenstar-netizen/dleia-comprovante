@@ -266,25 +266,15 @@
     <!-- ABA MENSAGEM -->
     <div id="tab-mensagem" style="display:none">
       <div class="card">
-        <div class="accordion-header" onclick="toggleAccordion('accordion-intervalo', this)">
-          <div class="card-title">⏱️ Intervalo entre envios</div>
-          <span class="accordion-arrow">▼</span>
-        </div>
-        <div class="accordion-body fechado" id="accordion-intervalo" style="max-height:0;">
-          <div style="padding-top:12px;">
-            <div class="alert alert-info">O app calcula o intervalo automaticamente pela quantidade de etiquetas: até 20 → 4s · até 50 → 6s · mais de 50 → 10s. Toque em "Automático" para usar esse cálculo, ou escolha um tempo fixo.</div>
-            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
-              <span class="tag-hint" onclick="setIntervalo('auto')">⏱️ Automático</span>
-              <span class="tag-hint" onclick="setIntervalo('3')">3s</span>
-              <span class="tag-hint" onclick="setIntervalo('5')">5s</span>
-              <span class="tag-hint" onclick="setIntervalo('8')">8s</span>
-              <span class="tag-hint" onclick="setIntervalo('10')">10s</span>
-              <span class="tag-hint" onclick="setIntervalo('15')">15s</span>
-            </div>
-            <label>Ou digite um tempo específico (segundos) <span class="label-hint">deixe "auto" para calcular sozinho</span></label>
-            <input type="text" id="intervalo-envio" placeholder="auto" inputmode="numeric" onfocus="this.select()" />
-          </div>
-        </div>
+        <div class="card-title">⏱️ Intervalo entre envios</div>
+        <select id="intervalo-envio" onchange="salvarIntervalo(this.value)" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--card-bg); color:var(--text-primary); font-size:14px; margin-top:8px;">
+          <option value="auto">⏱️ Automático (calculado pelo volume)</option>
+          <option value="3">3 segundos</option>
+          <option value="5">5 segundos</option>
+          <option value="8">8 segundos</option>
+          <option value="10">10 segundos</option>
+          <option value="15">15 segundos</option>
+        </select>
       </div>
       <div class="card">
         <div class="card-title">💬 Texto da mensagem</div>
@@ -614,7 +604,12 @@ function setCor(hex) {
 }
 
 function setIntervalo(valor) {
-  document.getElementById('intervalo-envio').value = valor;
+  const sel = document.getElementById('intervalo-envio');
+  if (sel) sel.value = valor;
+}
+
+function salvarIntervalo(valor) {
+  localStorage.setItem('intervalo_envio', valor);
 }
 
 function toggleAccordion(id, header) {
