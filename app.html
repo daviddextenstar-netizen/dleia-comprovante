@@ -385,39 +385,12 @@
     <!-- ABA PLANO -->
     <div id="tab-plano" style="display:none">
       <div class="card">
-        <div style="display:flex; align-items:center; justify-content:space-between;">
-          <div class="card-title" style="margin-bottom:0;">📦 Limite de envios mensal</div>
-          <button id="btn-lapis-limite" onclick="destrancarLimite()" style="display:none; background:none; border:none; cursor:pointer; font-size:18px; padding:4px 8px; line-height:1; border-radius:8px;" title="Editar limite">✏️</button>
-        </div>
-
-        <!-- Visualização travada (limite já definido) -->
-        <div id="limite-travado-view" style="display:none; margin-top:12px;">
-          <div style="text-align:center; padding:12px 0;">
-            <div style="font-size:13px; color:var(--text-secondary); margin-bottom:4px;">Plano Atual</div>
-            <div style="font-size:28px; font-weight:700; color:var(--text-primary);" id="limite-travado-valor">150</div>
-            <div style="font-size:12px; color:var(--text-secondary);">comprovantes por mês</div>
-            <div style="font-size:12px; color:var(--text-secondary); margin-top:8px;" id="ciclo-travado-info"></div>
-          </div>
-        </div>
-
-        <!-- Visualização editável (sem limite ainda, ou após destrancar) -->
-        <div id="limite-edicao-view" style="margin-top:12px;">
-          <div class="accordion-header" onclick="toggleAccordion('accordion-planos', this)" style="margin-bottom:8px;">
-            <label style="margin:0; cursor:pointer;">Plano <span class="label-hint">toque para ver os planos</span></label>
-            <span class="accordion-arrow">▼</span>
-          </div>
-          <div class="accordion-body fechado" id="accordion-planos" style="max-height:0;">
-            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; padding-top:4px;">
-              <span class="plano-btn" onclick="setLimitePlano(300)">Básico<br><span style="font-size:11px; font-weight:400; opacity:0.7;">300 envios</span></span>
-              <span class="plano-btn" onclick="setLimitePlano(600)">Intermediário<br><span style="font-size:11px; font-weight:400; opacity:0.7;">600 envios</span></span>
-              <span class="plano-btn" onclick="setLimitePlano(1000)">Avançado<br><span style="font-size:11px; font-weight:400; opacity:0.7;">1000 envios</span></span>
-            </div>
-          </div>
-          <label>Limite mensal de envios <span class="label-hint">digite 0 para ilimitado</span></label>
-          <input type="text" id="limite-mensal" placeholder="" inputmode="numeric" />
-          <label>Dia do ciclo de cobrança <span class="label-hint">dia em que o cliente assinou</span></label>
-          <input type="text" id="dia-ciclo" placeholder="ex: 12" inputmode="numeric" />
-          <button class="btn btn-green" onclick="salvarLimiteMensal()">💾 Salvar limite</button>
+        <div class="card-title" style="margin-bottom:0;">📦 Seu plano</div>
+        <div style="text-align:center; padding:12px 0;">
+          <div style="font-size:13px; color:var(--text-secondary); margin-bottom:4px;">Limite mensal</div>
+          <div style="font-size:28px; font-weight:700; color:var(--text-primary);" id="limite-travado-valor">—</div>
+          <div style="font-size:12px; color:var(--text-secondary);">comprovantes por mês</div>
+          <div style="font-size:12px; color:var(--text-secondary); margin-top:8px;" id="ciclo-travado-info"></div>
         </div>
       </div>
 
@@ -578,6 +551,16 @@ async function ativarPorCodigo() {
     localStorage.setItem('evo_apikey',    cfg.instancia_token || '');
     localStorage.setItem('codigo_acesso', codigo);
 
+    // Limite mensal vem do plano definido no painel (backend). O cliente não edita.
+    if (cfg.limite_envios !== undefined && cfg.limite_envios !== null) {
+      localStorage.setItem('limite_mensal', String(cfg.limite_envios));
+    }
+    // Dia do ciclo: usa o dia do vencimento, se vier; senão mantém o que já houver (ou dia 1)
+    if (cfg.vencimento) {
+      const diaVenc = new Date(cfg.vencimento).getUTCDate();
+      if (diaVenc >= 1 && diaVenc <= 31) localStorage.setItem('dia_ciclo', String(diaVenc));
+    }
+
     // Atualiza os campos ocultos também
     document.getElementById('anthropic-key').value = cfg.anthropic_key || '';
     document.getElementById('evo-server').value    = servidor;
@@ -618,7 +601,6 @@ function loadConfig() {
   document.getElementById('pix-chave').value         = localStorage.getItem('pix_chave') || '';
   document.getElementById('pix-nome').value          = localStorage.getItem('pix_nome') || '';
   document.getElementById('pix-banco').value         = localStorage.getItem('pix_banco') || '';
-  document.getElementById('limite-mensal').value     = localStorage.getItem('limite_mensal') || '';
   atualizarResumoUsoMensal();
   document.getElementById('cor-hex').value           = localStorage.getItem('cor_loja') || '#3a3f44';
   document.getElementById('cor-picker').value        = localStorage.getItem('cor_loja') || '#3a3f44';
@@ -775,7 +757,7 @@ function toggleAccordion(id, header) {
 }
 
 function setLimitePlano(valor) {
-  document.getElementById('limite-mensal').value = valor;
+  // Plano agora é definido no painel admin (backend). Função mantida por compatibilidade.
 }
 
 function inserirTag(tag) {
@@ -1296,23 +1278,7 @@ function limiteJaFoiDefinido() {
 }
 
 function salvarLimiteMensal() {
-  const limiteTexto = document.getElementById('limite-mensal').value.trim().toLowerCase();
-  if (limiteTexto === '') {
-    mostrarAvisoCustomizado('Digite um número de limite, ou 0 se não quiser restringir (ilimitado).', '⚠️');
-    return;
-  }
-  const diaTexto = document.getElementById('dia-ciclo').value.trim();
-  const diaNum = parseInt(diaTexto, 10);
-  if (diaTexto === '' || isNaN(diaNum) || diaNum < 1 || diaNum > 31) {
-    mostrarAvisoCustomizado('Digite um dia válido (entre 1 e 31) para o ciclo de cobrança — o dia em que o cliente assinou.', '⚠️');
-    return;
-  }
-  localStorage.setItem('limite_mensal', limiteTexto);
-  localStorage.setItem('dia_ciclo', String(diaNum));
-  // Reavalia o ciclo imediatamente com o novo dia configurado, evitando contagem incorreta
-  verificarResetMensal();
-  atualizarResumoUsoMensal();
-  mostrarAvisoCustomizado('Limite salvo!', '✅');
+  // Plano/limite agora vêm do painel admin (backend). Função mantida por compatibilidade.
 }
 
 const SENHA_ADMIN_LIMITE = '6DOfJ9cv6RQJ\\7vP.e{6|RMZX7£1\\o';
@@ -1431,14 +1397,7 @@ function abrirLeitorQrAdmin(callback) {
 }
 
 function destrancarLimite() {
-  abrirLeitorQrAdmin((autorizado) => {
-    if (!autorizado) return;
-    document.getElementById('limite-travado-view').style.display = 'none';
-    document.getElementById('limite-edicao-view').style.display = 'block';
-    const valorSalvo = localStorage.getItem('limite_mensal') || '';
-    document.getElementById('limite-mensal').value = (valorSalvo === 'ilimitado') ? '0' : valorSalvo;
-    document.getElementById('dia-ciclo').value = localStorage.getItem('dia_ciclo') || '';
-  });
+  // Edição de limite removida — o plano agora é controlado no painel admin (backend).
 }
 
 function resetarContadorMensal() {
@@ -1471,31 +1430,20 @@ function atualizarResumoUsoMensal() {
     barraEl.style.width = pct + '%';
     barraEl.style.background = pct >= 100 ? '#dc3545' : (pct >= 80 ? '#e6a700' : 'var(--cor-loja,#3a3f44)');
   } else {
-    labelEl.textContent = 'comprovantes enviados (sem limite definido)';
+    labelEl.textContent = 'comprovantes enviados';
     barraEl.style.width = '0%';
   }
 
-  // Decide qual view mostrar: travada (já tem limite configurado) ou edição (primeira vez)
-  const travadaView = document.getElementById('limite-travado-view');
-  const edicaoView = document.getElementById('limite-edicao-view');
-  const btnLapis = document.getElementById('btn-lapis-limite');
+  // Mostra o limite do plano (somente leitura) e a info do ciclo
+  const limiteValorEl = document.getElementById('limite-travado-valor');
   const cicloInfoEl = document.getElementById('ciclo-travado-info');
-  if (travadaView && edicaoView) {
-    if (limiteJaFoiDefinido()) {
-      document.getElementById('limite-travado-valor').textContent = limite ? limite : 'Ilimitado';
-      travadaView.style.display = 'block';
-      edicaoView.style.display = 'none';
-      if (btnLapis) btnLapis.style.display = 'block';
-      if (cicloInfoEl) {
-        const diaCiclo = obterDiaCiclo();
-        const proximaRenovacao = calcularProximaRenovacao(diaCiclo);
-        cicloInfoEl.textContent = `🔄 Ciclo renova todo dia ${diaCiclo} · próxima: ${proximaRenovacao}`;
-      }
-    } else {
-      travadaView.style.display = 'none';
-      edicaoView.style.display = 'block';
-      if (btnLapis) btnLapis.style.display = 'none';
-    }
+  if (limiteValorEl) {
+    limiteValorEl.textContent = limite ? limite : 'Ilimitado';
+  }
+  if (cicloInfoEl) {
+    const diaCiclo = obterDiaCiclo();
+    const proximaRenovacao = calcularProximaRenovacao(diaCiclo);
+    cicloInfoEl.textContent = `🔄 Ciclo renova todo dia ${diaCiclo} · próxima: ${proximaRenovacao}`;
   }
 }
 
@@ -1510,13 +1458,13 @@ async function startProcessing() {
     return;
   }
 
-  // Exige que um plano (limite mensal, mesmo que "ilimitado") tenha sido definido
-  // explicitamente antes de liberar qualquer envio — evita uso sem plano configurado.
+  // O limite vem do plano definido no painel (backend), salvo ao ativar pelo código.
+  // Se não houver limite, a loja não foi ativada corretamente — manda ativar de novo.
   if (!limiteJaFoiDefinido()) {
-    mostrarAvisoCustomizado('Nenhum plano foi configurado ainda para esta loja.', '📦');
+    mostrarAvisoCustomizado('Sua loja ainda não foi ativada. Digite seu código de acesso no Painel.', '🔑');
     setSection('sec-painel');
-    const btnPlano = document.querySelector('.nav-tab[onclick*="tab-plano"]');
-    if (btnPlano) showTab('tab-plano', btnPlano);
+    const btnApis = document.getElementById('btn-tab-apis');
+    if (btnApis) showTab('tab-apis', btnApis);
     return;
   }
 
