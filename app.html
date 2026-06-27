@@ -507,10 +507,16 @@ let dadosLidos = [];
 
 // ===== CONFIG =====
 function saveConfig() {
-  localStorage.setItem('anthropic_key', document.getElementById('anthropic-key').value.trim());
-  localStorage.setItem('evo_server',    document.getElementById('evo-server').value.trim().replace(/^https?:\/\//, '').replace(/\/$/, ''));
-  localStorage.setItem('evo_instance',  document.getElementById('evo-instance').value.trim());
-  localStorage.setItem('evo_apikey',    document.getElementById('evo-apikey').value.trim());
+  // As chaves vêm da ativação por código (campos ocultos). Só sobrescreve se houver
+  // valor — assim salvar Mensagem/PIX/Aparência nunca apaga a configuração ativada.
+  const akey = document.getElementById('anthropic-key').value.trim();
+  const asrv = document.getElementById('evo-server').value.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
+  const ainst = document.getElementById('evo-instance').value.trim();
+  const atok = document.getElementById('evo-apikey').value.trim();
+  if (akey)  localStorage.setItem('anthropic_key', akey);
+  if (asrv)  localStorage.setItem('evo_server', asrv);
+  if (ainst) localStorage.setItem('evo_instance', ainst);
+  if (atok)  localStorage.setItem('evo_apikey', atok);
   const intervaloTexto = document.getElementById('intervalo-envio').value.trim().toLowerCase();
   if (intervaloTexto === '' || intervaloTexto === 'auto') {
     localStorage.setItem('intervalo_envio', 'auto');
@@ -845,7 +851,11 @@ function atualizarPreview() {
     .replace(/{nome}/g, 'Tarsila Beckman')
     .replace(/{box}/g, '153')
     .replace(/{setor}/g, 'Verde / Calçadão - Rua B')
-    .replace(/{status}/g, 'PAGO');
+    .replace(/{status}/g, 'PAGO')
+    .replace(/{taxa}/g, '5.00')
+    .replace(/{pix_chave}/g, localStorage.getItem('pix_chave') || '(sua chave PIX)')
+    .replace(/{pix_nome}/g, localStorage.getItem('pix_nome') || '(seu nome)')
+    .replace(/{pix_banco}/g, localStorage.getItem('pix_banco') || '(seu banco)');
   document.getElementById('msg-preview').textContent = preview;
 }
 
@@ -1767,16 +1777,30 @@ async function lerEtiqueta(file, apiKey) {
   }
 }
 
+// Normaliza o telefone para o formato que a Evolution espera (55 + DDD + numero).
+// Trata casos: numero com 55 ja na frente, numero so com DDD+numero, etc.
+function normalizarTelefone(tel) {
+  let n = String(tel || '').replace(/\D/g, '');
+  // Remove zeros à esquerda (ex: 081... -> 81...)
+  n = n.replace(/^0+/, '');
+  // Se já começa com 55 e tem comprimento de numero completo (12 ou 13 digitos), mantém
+  if (n.startsWith('55') && (n.length === 12 || n.length === 13)) {
+    return n;
+  }
+  // Caso normal: DDD + numero (10 ou 11 digitos) -> adiciona o 55
+  return '55' + n;
+}
+
 async function enviarFoto(file, dados, serverUrl, instanceName, apiKey) {
   const b64 = await toBase64(file);
-  const telefone = dados.telefone.replace(/\D/g,'');
+  const telefone = normalizarTelefone(dados.telefone);
   const caption = montarMensagem(dados);
   const url = `https://${serverUrl}/message/sendMedia/${instanceName}`;
   const resp = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'apikey': apiKey },
     body: JSON.stringify({
-      number: `55${telefone}`,
+      number: telefone,
       mediatype: 'image',
       mimetype: file.type || 'image/jpeg',
       media: b64,
@@ -1791,13 +1815,13 @@ async function enviarFoto(file, dados, serverUrl, instanceName, apiKey) {
 }
 
 async function enviarMensagem(dados, serverUrl, instanceName, apiKey) {
-  const telefone = dados.telefone.replace(/\D/g,'');
+  const telefone = normalizarTelefone(dados.telefone);
   const mensagem = montarMensagem(dados);
   const url = `https://${serverUrl}/message/sendText/${instanceName}`;
   const resp = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'apikey': apiKey },
-    body: JSON.stringify({ number: `55${telefone}`, text: mensagem })
+    body: JSON.stringify({ number: telefone, text: mensagem })
   });
   if (!resp.ok) {
     const txt = await resp.text();
@@ -1806,7 +1830,10 @@ async function enviarMensagem(dados, serverUrl, instanceName, apiKey) {
 }
 
 function montarMensagem(dados) {
-  const temTaxa = dados.taxa && dados.taxa !== 'sem taxa' && dados.taxa !== '' && dados.taxa !== '0';
+  // Taxa só conta se for um número maior que zero. Cobre todos os casos de "sem taxa"
+  // que a IA possa devolver: "sem taxa", "", "0", "0.00", "0,00", null, etc.
+  const taxaComoNumero = parseFloat(String(dados.taxa == null ? '' : dados.taxa).replace(',', '.'));
+  const temTaxa = !isNaN(taxaComoNumero) && taxaComoNumero > 0;
   const tpl = temTaxa ? MSG_TAXA : (localStorage.getItem('msg_template') || MSG_PADRAO);
   const pixChave = localStorage.getItem('pix_chave') || '(configure no Painel)';
   const pixNome  = localStorage.getItem('pix_nome') || '(configure no Painel)';
@@ -1891,7 +1918,7 @@ function salvarHistorico(inicioLote, ok, err) {
     box: r.box || '',
     setor: r.setor || '',
     excursao: r.excursao || '',
-    taxa: r.taxa && r.taxa !== 'sem taxa' ? r.taxa : '',
+    taxa: (() => { const t = parseFloat(String(r.taxa == null ? '' : r.taxa).replace(',', '.')); return (!isNaN(t) && t > 0) ? r.taxa : ''; })(),
     sucesso: !!r.sucesso,
     erro: r.erro || ''
   }));
