@@ -1140,6 +1140,37 @@ function abrirFotoEmTelaCheia(index) {
   });
 }
 
+// Abre a foto de um item JA PROCESSADO (tela de resultados) em tela cheia.
+// Util quando um envio falha: permite ver a etiqueta grande pra descobrir quem e
+// e qual o numero correto. Mostra o que a IA leu (ou o erro) embaixo da imagem.
+function abrirFotoResultado(i) {
+  const item = dadosLidos[i];
+  if (!item || !item.previewUrl) {
+    mostrarAvisoCustomizado('Foto não disponível.', '⚠️');
+    return;
+  }
+
+  // Monta a legenda informativa (nome / telefone lidos, ou o erro)
+  let info = '';
+  if (item.nome) info += escHtml(item.nome);
+  if (item.telefone) info += (info ? ' · ' : '') + '📱 ' + escHtml(item.telefone);
+  if (!item.telefone && item.erro) info += (info ? ' · ' : '') + '⚠️ ' + escHtml(item.erro);
+  if (!info) info = 'Não foi possível ler os dados desta etiqueta';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'foto-fullscreen-overlay';
+  overlay.innerHTML = `
+    <button class="foto-fullscreen-fechar" id="foto-res-fechar">✕</button>
+    <div class="foto-fullscreen-nome">${info}</div>
+    <img src="${item.previewUrl}" class="foto-fullscreen-img" />
+  `;
+  document.body.appendChild(overlay);
+
+  function fechar() { overlay.remove(); }
+  overlay.querySelector('#foto-res-fechar').addEventListener('click', fechar);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) fechar(); });
+}
+
 function gerarMiniatura(file, index) {
   return new Promise((resolve) => {
     const imgEl = document.getElementById('thumb-img-' + index);
@@ -1915,7 +1946,7 @@ function showDone(ok, err) {
   document.getElementById('s-err').textContent = err;
   document.getElementById('done-list').innerHTML = dadosLidos.map((r, i) => `
     <div class="item-row">
-      <img class="item-thumb" src="${r.previewUrl}" />
+      <img class="item-thumb" src="${r.previewUrl}" onclick="abrirFotoResultado(${i})" style="cursor:pointer;" title="Toque para ampliar" />
       <div class="item-info">
         <div class="name">${escHtml(r.nome||'?')}</div>
         <div class="detail">${escHtml(r.telefone||r.erro||'')}</div>
