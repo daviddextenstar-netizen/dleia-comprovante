@@ -688,7 +688,7 @@ function loadConfig() {
   document.getElementById('taxa-todos-toggle').checked = localStorage.getItem('taxa_todos_ativa') === '1';
   document.getElementById('taxa-todos-valor').value    = localStorage.getItem('taxa_todos_valor') || '';
   atualizarAtalhosTaxa();
-  toggleCampoTaxaTodos();
+  mostrarCampoTaxaTodos(document.getElementById('taxa-todos-toggle').checked);
   document.getElementById('pix-chave').value         = localStorage.getItem('pix_chave') || '';
   document.getElementById('pix-nome').value          = localStorage.getItem('pix_nome') || '';
   document.getElementById('pix-banco').value         = localStorage.getItem('pix_banco') || '';
@@ -748,9 +748,10 @@ function resetMensagem() {
   atualizarPreview();
 }
 
+// Chamada quando o USUARIO clica no toggle (onchange). Salva e avisa.
 function toggleCampoTaxaTodos() {
   const ativado = document.getElementById('taxa-todos-toggle').checked;
-  document.getElementById('campo-taxa-todos-valor').style.display = ativado ? 'block' : 'none';
+  mostrarCampoTaxaTodos(ativado);
 
   // Salva o estado na hora (Opcao A): ao DESLIGAR, ja desativa de verdade no mesmo instante,
   // evitando cobrar taxa por engano caso esqueca de clicar em Salvar.
@@ -767,6 +768,11 @@ function toggleCampoTaxaTodos() {
       mostrarAvisoCustomizado('Cobrança ativada! Agora escolha ou digite o valor da taxa e clique em Salvar.', '💵');
     }
   }
+}
+
+// Só mostra/esconde o campo (sem salvar nem avisar). Usada no carregamento do app.
+function mostrarCampoTaxaTodos(ativado) {
+  document.getElementById('campo-taxa-todos-valor').style.display = ativado ? 'block' : 'none';
 }
 
 // Clicou num botão de atalho (R$5 ou R$10): preenche o campo e destaca o botão
