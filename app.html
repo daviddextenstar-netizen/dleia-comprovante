@@ -83,6 +83,12 @@
   .btn:active { opacity: .85; }
   .btn-green { background: var(--cor-loja, #3a3f44); color: #fff; }
   .btn-gray { background: var(--gray-bg); color: var(--gray-text); }
+
+  /* Botões de atalho de taxa (R$5 / R$10) */
+  .taxa-atalhos { display: flex; gap: 8px; margin-bottom: 10px; }
+  .taxa-atalho { flex: 1; padding: 14px; border: 2px solid var(--border, #ddd); border-radius: 10px; background: var(--card-bg, #fff); color: var(--text, #333); font-size: 17px; font-weight: 700; cursor: pointer; transition: all .15s; }
+  .taxa-atalho:active { transform: scale(.97); }
+  .taxa-atalho.ativo { border-color: #2ecc71; background: #2ecc71; color: #fff; }
   .btn-red { background: #dc3545; color: #fff; }
   .btn:disabled { opacity: .45; cursor: not-allowed; }
   .upload-area { border: 2px dashed #c8e6d8; border-radius: 12px; padding: 28px 16px; text-align: center; cursor: pointer; background: #f0faf6; transition: border-color .2s, background .2s; }
@@ -362,7 +368,11 @@
         </div>
         <div id="campo-taxa-todos-valor" style="display:none; margin-top:10px;">
           <label>Valor da taxa para todos (R$)</label>
-          <input type="text" id="taxa-todos-valor" placeholder="5.00" inputmode="decimal" />
+          <div class="taxa-atalhos">
+            <button type="button" class="taxa-atalho" id="atalho-taxa-5" onclick="selecionarTaxaAtalho('5.00')">R$ 5</button>
+            <button type="button" class="taxa-atalho" id="atalho-taxa-10" onclick="selecionarTaxaAtalho('10.00')">R$ 10</button>
+          </div>
+          <input type="text" id="taxa-todos-valor" placeholder="Ou digite outro valor" inputmode="decimal" oninput="atualizarAtalhosTaxa()" />
         </div>
         <button class="btn btn-green" onclick="salvarTaxaTodos()" style="margin-top:10px;">💾 Salvar cobrança para todos</button>
       </div>
@@ -677,6 +687,7 @@ function loadConfig() {
   document.getElementById('msg-template').value      = localStorage.getItem('msg_template') || MSG_PADRAO;
   document.getElementById('taxa-todos-toggle').checked = localStorage.getItem('taxa_todos_ativa') === '1';
   document.getElementById('taxa-todos-valor').value    = localStorage.getItem('taxa_todos_valor') || '';
+  atualizarAtalhosTaxa();
   toggleCampoTaxaTodos();
   document.getElementById('pix-chave').value         = localStorage.getItem('pix_chave') || '';
   document.getElementById('pix-nome').value          = localStorage.getItem('pix_nome') || '';
@@ -740,6 +751,22 @@ function resetMensagem() {
 function toggleCampoTaxaTodos() {
   const ativado = document.getElementById('taxa-todos-toggle').checked;
   document.getElementById('campo-taxa-todos-valor').style.display = ativado ? 'block' : 'none';
+}
+
+// Clicou num botão de atalho (R$5 ou R$10): preenche o campo e destaca o botão
+function selecionarTaxaAtalho(valor) {
+  document.getElementById('taxa-todos-valor').value = valor;
+  atualizarAtalhosTaxa();
+}
+
+// Destaca o botão de atalho que bate com o valor digitado (ou nenhum, se for outro valor)
+function atualizarAtalhosTaxa() {
+  const val = (document.getElementById('taxa-todos-valor').value || '').trim().replace(',', '.');
+  const n = parseFloat(val);
+  const b5 = document.getElementById('atalho-taxa-5');
+  const b10 = document.getElementById('atalho-taxa-10');
+  if (b5) b5.classList.toggle('ativo', n === 5);
+  if (b10) b10.classList.toggle('ativo', n === 10);
 }
 
 function salvarTaxaTodos() {
