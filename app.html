@@ -10,6 +10,7 @@
 <meta name="theme-color" content="#000000" id="meta-theme-color">
 <style>
   :root {
+    --cor-loja: #000000;
     --bg: #f5f5f0;
     --card-bg: #fff;
     --card-border: #e8e8e4;
@@ -279,7 +280,6 @@
   <div class="menu-itens">
     <button class="menu-item" onclick="menuIr('enviar')"><span class="ico">📷</span> Enviar</button>
     <button class="menu-item" onclick="menuIr('mensagem')"><span class="ico">💬</span> Mensagem</button>
-    <button class="menu-item" onclick="menuIr('personalizacao')"><span class="ico">🎨</span> Personalização</button>
     <button class="menu-item" onclick="menuIr('plano')"><span class="ico">📦</span> Seu Plano</button>
     <button class="menu-item" onclick="menuIr('historico')"><span class="ico">🕐</span> Histórico</button>
     <button class="menu-item" onclick="menuIr('tema')"><span class="ico" id="menu-tema-ico">🌙</span> <span id="menu-tema-txt">Modo noturno</span></button>
@@ -293,7 +293,6 @@
     <div class="nav-tabs" style="display:none">
       <button class="nav-tab active" id="btn-tab-apis" onclick="showTab('tab-apis', this)">🔑 APIs</button>
       <button class="nav-tab" onclick="showTab('tab-mensagem', this)">💬 Mensagem</button>
-      <button class="nav-tab" onclick="showTab('tab-loja', this)">🎨 Aparência</button>
       <button class="nav-tab" onclick="showTab('tab-plano', this)">📦 Plano</button>
     </div>
 
@@ -391,32 +390,6 @@
     </div>
 
     <!-- ABA APARÊNCIA -->
-    <div id="tab-loja" style="display:none">
-      <div class="card">
-        <div class="card-title">🎨 Cor principal</div>
-        <div class="color-picker-row">
-          <label for="cor-picker" class="color-preview-wrap" title="Toque para escolher a cor">
-            <input type="color" id="cor-picker" value="#000000" oninput="syncCor(this.value)" />
-            <span class="color-preview-swatch" id="cor-preview-swatch"></span>
-          </label>
-          <div style="flex:1;">
-            <label>Código da cor</label>
-            <input type="text" id="cor-hex" placeholder="#000000" />
-          </div>
-        </div>
-        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
-          <span class="tag-hint" style="background:#3a3f44;color:#fff;border-color:#3a3f44" onclick="setCor('#3a3f44')">Chumbo</span>
-          <span class="tag-hint" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="setCor('#1D9E75')">Verde</span>
-          <span class="tag-hint" style="background:#e91e8c;color:#fff;border-color:#e91e8c" onclick="setCor('#e91e8c')">Rosa</span>
-          <span class="tag-hint" style="background:#6c3fc5;color:#fff;border-color:#6c3fc5" onclick="setCor('#6c3fc5')">Roxo</span>
-          <span class="tag-hint" style="background:#e65c00;color:#fff;border-color:#e65c00" onclick="setCor('#e65c00')">Laranja</span>
-          <span class="tag-hint" style="background:#1565c0;color:#fff;border-color:#1565c0" onclick="setCor('#1565c0')">Azul</span>
-          <span class="tag-hint" style="background:#333;color:#fff;border-color:#333" onclick="setCor('#333333')">Preto</span>
-        </div>
-      </div>
-      <button class="btn btn-green" onclick="saveConfig()">💾 Salvar aparência</button>
-    </div>
-
     <!-- ABA PLANO -->
     <div id="tab-plano" style="display:none">
       <div class="card">
@@ -547,7 +520,6 @@ function saveConfig() {
   localStorage.setItem('pix_chave',     document.getElementById('pix-chave').value.trim());
   localStorage.setItem('pix_nome',      document.getElementById('pix-nome').value.trim());
   localStorage.setItem('pix_banco',     document.getElementById('pix-banco').value.trim());
-  localStorage.setItem('cor_loja',      document.getElementById('cor-hex').value.trim());
   aplicarAparencia();
   atualizarVisibilidadeAbaApis();
   mostrarAvisoCustomizado('Configurações salvas!', '✅');
@@ -693,8 +665,6 @@ function loadConfig() {
   document.getElementById('pix-nome').value          = localStorage.getItem('pix_nome') || '';
   document.getElementById('pix-banco').value         = localStorage.getItem('pix_banco') || '';
   atualizarResumoUsoMensal();
-  document.getElementById('cor-hex').value           = localStorage.getItem('cor_loja') || '#000000';
-  document.getElementById('cor-picker').value        = localStorage.getItem('cor_loja') || '#000000';
   aplicarAparencia();
   atualizarPreview();
   atualizarVisibilidadeAbaApis();
@@ -737,10 +707,9 @@ function limparErroDeApi() {
 }
 
 function aplicarAparencia() {
-  const cor = localStorage.getItem('cor_loja') || '#000000';
-  document.documentElement.style.setProperty('--cor-loja', cor);
+  // Cor da marca ComproV é fixa (preto). Mantida no CSS; aqui so garante o theme-color.
   const metaTheme = document.getElementById('meta-theme-color');
-  if (metaTheme) metaTheme.setAttribute('content', cor);
+  if (metaTheme) metaTheme.setAttribute('content', '#000000');
 }
 
 function resetMensagem() {
@@ -802,15 +771,6 @@ function salvarTaxaTodos() {
   localStorage.setItem('taxa_todos_valor', valorTexto);
   atualizarAvisoTaxaTodos();
   mostrarAvisoCustomizado(ativado ? 'Cobrança de taxa para todos ativada!' : 'Cobrança de taxa para todos desativada.', '✅');
-}
-
-function syncCor(val) {
-  document.getElementById('cor-hex').value = val;
-}
-
-function setCor(hex) {
-  document.getElementById('cor-hex').value = hex;
-  document.getElementById('cor-picker').value = hex;
 }
 
 function setIntervalo(valor) {
@@ -915,11 +875,7 @@ function atualizarPreview() {
 }
 
 document.getElementById('msg-template').addEventListener('input', atualizarPreview);
-document.getElementById('cor-hex').addEventListener('input', function() {
-  if (this.value.match(/^#[0-9A-Fa-f]{6}$/)) {
-    document.getElementById('cor-picker').value = this.value;
-  }
-});
+
 
 // ===== NAVEGAÇÃO =====
 // ===== MENU HAMBURGUER =====
@@ -952,10 +908,6 @@ function menuIr(destino) {
     setSection('sec-painel');
     const b = document.querySelector('.nav-tab[onclick*="tab-mensagem"]');
     if (b) showTab('tab-mensagem', b);
-  } else if (destino === 'personalizacao') {
-    setSection('sec-painel');
-    const b = document.querySelector('.nav-tab[onclick*="tab-loja"]');
-    if (b) showTab('tab-loja', b);
   } else if (destino === 'plano') {
     setSection('sec-painel');
     const b = document.querySelector('.nav-tab[onclick*="tab-plano"]');
