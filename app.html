@@ -126,6 +126,19 @@
   .plano-barra-grande { height: 10px; background: var(--gray-bg, #eee); border-radius: 999px; overflow: hidden; }
   .plano-barra-grande-fill { height: 100%; background: #2ecc71; border-radius: 999px; transition: width .5s ease; width: 0%; }
   .plano-pct { text-align: right; font-size: 11px; color: var(--text-tertiary); margin-top: 6px; font-weight: 600; }
+
+  /* Seções repaginadas (aba mensagem) */
+  .sec-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 18px; margin-bottom: 12px; }
+  .sec-head { display: flex; align-items: center; gap: 8px; }
+  .sec-ico { width: 26px; height: 26px; border-radius: 8px; background: var(--tab-bg, #f0f0ec); display: inline-flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .sec-titulo { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+  .sec-desc { font-size: 11px; color: var(--text-tertiary); margin: 2px 0 14px 34px; line-height: 1.4; }
+  .sec-campo-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 5px; }
+  .sec-campo-label .opc { color: var(--text-tertiary); }
+  .btn-dupla { display: flex; gap: 8px; margin-bottom: 12px; }
+  .btn-dupla .btn { margin: 0; flex: 1; }
+  .preview-label { font-size: 11px; color: var(--text-tertiary); margin: 14px 0 8px; letter-spacing: .05em; }
+  .preview-time { font-size: 10px; color: #7a9b76; text-align: right; margin-top: 3px; }
   .progress-label { display:flex; justify-content:space-between; font-size:12px; color:#888; }
   .item-row { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--row-border); }
   .item-row:last-child { border-bottom:none; }
@@ -329,9 +342,13 @@
 
     <!-- ABA MENSAGEM -->
     <div id="tab-mensagem" style="display:none">
-      <div class="card">
-        <div class="card-title">⏱️ Intervalo entre envios</div>
-        <div class="dropdown-custom" id="dropdown-intervalo" style="margin-top:8px;">
+      <div class="sec-card">
+        <div class="sec-head">
+          <span class="sec-ico">⏱️</span>
+          <span class="sec-titulo">Intervalo entre envios</span>
+        </div>
+        <div class="sec-desc">Tempo de espera entre cada comprovante</div>
+        <div class="dropdown-custom" id="dropdown-intervalo">
           <div class="dropdown-selected" onclick="toggleDropdownIntervalo()">
             <span id="dropdown-intervalo-label">⏱️ Automático (calculado pelo volume)</span>
             <span class="dropdown-arrow">▼</span>
@@ -345,63 +362,71 @@
             <div class="dropdown-item" onclick="selecionarIntervalo('15', '15 segundos')">15 segundos</div>
           </div>
         </div>
-        <!-- input oculto para manter compatibilidade com o restante do código -->
         <input type="hidden" id="intervalo-envio" value="auto" />
       </div>
-      <div class="card">
-        <div class="card-title">💬 Texto da mensagem</div>
-        <div class="alert alert-info" style="margin-bottom:12px;">
-          Use as variáveis abaixo para inserir dados da etiqueta automaticamente. Clique para inserir:
-          <div style="margin-top:8px;">
-            <span class="tag-hint" onclick="inserirTag('{nome}')">👤 {nome}</span>
-            <span class="tag-hint" onclick="inserirTag('{box}')">📦 {box}</span>
-            <span class="tag-hint" onclick="inserirTag('{setor}')">📍 {setor}</span>
-            <span class="tag-hint" onclick="inserirTag('{status}')">✅ {status}</span>
-          </div>
+
+      <div class="sec-card">
+        <div class="sec-head">
+          <span class="sec-ico">💬</span>
+          <span class="sec-titulo">Texto da mensagem</span>
         </div>
-        <label>Mensagem</label>
+        <div class="sec-desc">Toque numa variável para inserir no texto</div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;">
+          <span class="tag-hint" onclick="inserirTag('{nome}')">👤 {nome}</span>
+          <span class="tag-hint" onclick="inserirTag('{box}')">📦 {box}</span>
+          <span class="tag-hint" onclick="inserirTag('{setor}')">📍 {setor}</span>
+          <span class="tag-hint" onclick="inserirTag('{status}')">✅ {status}</span>
+        </div>
         <textarea id="msg-template" placeholder="Digite sua mensagem..."></textarea>
-        <div class="divider"></div>
-        <label>Prévia</label>
+        <div class="preview-label">PRÉVIA</div>
         <div class="preview-box">
           <div class="preview-bubble" id="msg-preview">...</div>
+          <div class="preview-time">agora ✓✓</div>
         </div>
       </div>
-      <button class="btn btn-green" onclick="saveConfig()">💾 Salvar mensagem</button>
-      <button class="btn btn-gray" onclick="resetMensagem()">↩️ Restaurar padrão</button>
 
-      <div class="card" style="margin-top:12px;">
-        <div class="card-title">💵 Cobrar taxa de todos do lote</div>
-        <div class="alert alert-warn">Quando ativado, TODOS os comprovantes enviados neste lote recebem a mensagem de taxa com o valor abaixo — mesmo sem $ na etiqueta. Use para excursões onde toda a remessa paga a mesma taxa.</div>
+      <div class="btn-dupla">
+        <button class="btn btn-green" onclick="saveConfig()">💾 Salvar</button>
+        <button class="btn btn-gray" onclick="resetMensagem()">↩️ Padrão</button>
+      </div>
+
+      <div class="sec-card">
+        <div class="sec-head">
+          <span class="sec-ico">💵</span>
+          <span class="sec-titulo">Cobrar taxa de todos</span>
+        </div>
+        <div class="sec-desc">Todo o lote recebe a mesma taxa, mesmo sem $ na etiqueta</div>
         <div class="switch-row">
-          <span class="switch-label">Ativar cobrança de taxa para todos</span>
+          <span class="switch-label">Ativar cobrança para todos</span>
           <label class="switch">
             <input type="checkbox" id="taxa-todos-toggle" onchange="toggleCampoTaxaTodos()" />
             <span class="switch-track"></span>
           </label>
         </div>
-        <div id="campo-taxa-todos-valor" style="display:none; margin-top:10px;">
-          <label>Valor da taxa para todos (R$)</label>
+        <div id="campo-taxa-todos-valor" style="display:none; margin-top:14px;">
           <div class="taxa-atalhos">
             <button type="button" class="taxa-atalho" id="atalho-taxa-5" onclick="selecionarTaxaAtalho('5.00')">R$ 5</button>
             <button type="button" class="taxa-atalho" id="atalho-taxa-10" onclick="selecionarTaxaAtalho('10.00')">R$ 10</button>
           </div>
           <input type="text" id="taxa-todos-valor" placeholder="Ou digite outro valor" inputmode="decimal" oninput="atualizarAtalhosTaxa()" />
+          <button class="btn btn-green" onclick="salvarTaxaTodos()" style="margin-top:12px;">💾 Salvar cobrança para todos</button>
         </div>
-        <button class="btn btn-green" onclick="salvarTaxaTodos()" style="margin-top:10px;">💾 Salvar cobrança para todos</button>
       </div>
 
-      <div class="card" style="margin-top:12px;">
-        <div class="card-title">💰 Dados do PIX (taxa de excursão)</div>
-        <div class="alert alert-info">Esses dados aparecem automaticamente na mensagem quando a etiqueta tiver $ ou $$, ou quando a cobrança para todos estiver ativada.</div>
-        <label>Chave PIX</label>
+      <div class="sec-card">
+        <div class="sec-head">
+          <span class="sec-ico">💰</span>
+          <span class="sec-titulo">Dados do PIX</span>
+        </div>
+        <div class="sec-desc">Aparece na mensagem quando a etiqueta tem taxa</div>
+        <div class="sec-campo-label">Chave PIX</div>
         <input type="text" id="pix-chave" placeholder="Sua Chave PIX" />
-        <label>Nome do titular</label>
+        <div class="sec-campo-label" style="margin-top:10px;">Nome do titular</div>
         <input type="text" id="pix-nome" placeholder="Nome completo" />
-        <label>Banco / Carteira <span class="label-hint">opcional</span></label>
+        <div class="sec-campo-label" style="margin-top:10px;">Banco / Carteira <span class="opc">(opcional)</span></div>
         <input type="text" id="pix-banco" placeholder="Mercado Pago" />
+        <button class="btn btn-green" onclick="saveConfig()" style="margin-top:14px;">💾 Salvar PIX</button>
       </div>
-      <button class="btn btn-green" onclick="saveConfig()">💾 Salvar PIX</button>
     </div>
 
     <div id="tab-plano" style="display:none">
